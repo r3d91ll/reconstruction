@@ -1,0 +1,268 @@
+{
+  "metadata": {
+    "paper_count": 10,
+    "edge_count": 45,
+    "avg_context": 0.6805173004251177,
+    "std_context": 0.06104867707645103
+  },
+  "zero_propagation": [
+    {
+      "id": "2504_14668v1",
+      "title": "A Byzantine Fault Tolerance Approach towards AI Sa",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "2002_11174v1",
+      "title": "TanksWorld: A Multi-Agent Environment for AI Safet",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "2306_02979v1",
+      "title": "The Chai Platform's AI Safety Framework",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "2501_16500v1",
+      "title": "Towards Frontier Safety Policies Plus",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "1610_07997v1",
+      "title": "Artificial Intelligence Safety and Cybersecurity: ",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "2406_11860v1",
+      "title": "An ethical study of generative AI from the Actor-N",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "2504_12914v1",
+      "title": "In Which Areas of Technical AI Safety Could Geopol",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "2404_12458v3",
+      "title": "A dancing bear, a colleague, or a sharpened toolbo",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "2504_02725v1",
+      "title": "ERPO: Advancing Safety Alignment via Ex-Ante Reaso",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    },
+    {
+      "id": "2505_19533v1",
+      "title": "ExAnte: A Benchmark for Ex-Ante Inference in Large",
+      "WHERE": 1,
+      "WHAT": 0,
+      "CONVEYANCE": 0,
+      "TIME": 1,
+      "INFORMATION": 0
+    }
+  ],
+  "context_distribution": {
+    "original": [
+      0.6157982447353146,
+      0.758718609708508,
+      0.6283130869183777,
+      0.6742814585346286,
+      0.7151781945927251,
+      0.6485772477958501,
+      0.7339918889416023,
+      0.745044298507684,
+      0.5863358772771485,
+      0.6476830868530696,
+      0.7240712753955708,
+      0.7235802089430238,
+      0.6932923965615371,
+      0.7036601364885052,
+      0.7504880319472007,
+      0.5714406447528101,
+      0.7110769720559974,
+      0.7327669263160731,
+      0.7205933534385994,
+      0.6227720028931941,
+      0.7463995873876583,
+      0.7289023058701825,
+      0.643720733963129,
+      0.7013646503422181,
+      0.7490591962353044,
+      0.6527273036867255,
+      0.7439432591962867,
+      0.824642163492492,
+      0.6426171618215913,
+      0.6278882325317088,
+      0.666633478714302,
+      0.6778833018765297,
+      0.7007685388209602,
+      0.5968662225082667,
+      0.7122292547355671,
+      0.5453869194982794,
+      0.7637571571213956,
+      0.6155476960383608,
+      0.6207553965139061,
+      0.654623391857397,
+      0.6417346120264361,
+      0.5780629749650523,
+      0.6334906333936704,
+      0.6877937635094701,
+      0.7588166403659831
+    ],
+    "amplified": [
+      0.6157982447353146,
+      0.758718609708508,
+      0.6283130869183777,
+      0.6742814585346286,
+      0.7151781945927251,
+      0.6485772477958501,
+      0.7339918889416023,
+      0.745044298507684,
+      0.5863358772771485,
+      0.6476830868530696,
+      0.7240712753955708,
+      0.7235802089430238,
+      0.6932923965615371,
+      0.7036601364885052,
+      0.7504880319472007,
+      0.5714406447528101,
+      0.7110769720559974,
+      0.7327669263160731,
+      0.7205933534385994,
+      0.6227720028931941,
+      0.7463995873876583,
+      0.7289023058701825,
+      0.643720733963129,
+      0.7013646503422181,
+      0.7490591962353044,
+      0.6527273036867255,
+      0.7439432591962867,
+      0.824642163492492,
+      0.6426171618215913,
+      0.6278882325317088,
+      0.666633478714302,
+      0.6778833018765297,
+      0.7007685388209602,
+      0.5968662225082667,
+      0.7122292547355671,
+      0.5453869194982794,
+      0.7637571571213956,
+      0.6155476960383608,
+      0.6207553965139061,
+      0.654623391857397,
+      0.6417346120264361,
+      0.5780629749650523,
+      0.6334906333936704,
+      0.6877937635094701,
+      0.7588166403659831
+    ]
+  },
+  "bridge_candidates": [
+    {
+      "id": "2504_14668v1",
+      "title": "A Byzantine Fault Tolerance Approach towards AI Sa",
+      "abstract_length": 0,
+      "category_count": 1,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "2002_11174v1",
+      "title": "TanksWorld: A Multi-Agent Environment for AI Safet",
+      "abstract_length": 0,
+      "category_count": 2,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "2306_02979v1",
+      "title": "The Chai Platform's AI Safety Framework",
+      "abstract_length": 0,
+      "category_count": 1,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "2501_16500v1",
+      "title": "Towards Frontier Safety Policies Plus",
+      "abstract_length": 0,
+      "category_count": 1,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "1610_07997v1",
+      "title": "Artificial Intelligence Safety and Cybersecurity: ",
+      "abstract_length": 0,
+      "category_count": 2,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "2406_11860v1",
+      "title": "An ethical study of generative AI from the Actor-N",
+      "abstract_length": 0,
+      "category_count": 3,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "2504_12914v1",
+      "title": "In Which Areas of Technical AI Safety Could Geopol",
+      "abstract_length": 0,
+      "category_count": 1,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "2404_12458v3",
+      "title": "A dancing bear, a colleague, or a sharpened toolbo",
+      "abstract_length": 0,
+      "category_count": 1,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "2504_02725v1",
+      "title": "ERPO: Advancing Safety Alignment via Ex-Ante Reaso",
+      "abstract_length": 0,
+      "category_count": 1,
+      "embedding_norm": 0.0
+    },
+    {
+      "id": "2505_19533v1",
+      "title": "ExAnte: A Benchmark for Ex-Ante Inference in Large",
+      "abstract_length": 0,
+      "category_count": 1,
+      "embedding_norm": 0.0
+    }
+  ]
+}
