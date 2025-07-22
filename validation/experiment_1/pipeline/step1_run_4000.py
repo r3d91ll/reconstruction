@@ -15,7 +15,7 @@ def main():
     # Configuration
     papers_dir = "/home/todd/olympus/Erebus/unstructured/papers"  # Source - DO NOT MODIFY
     output_dir = os.environ.get("VALIDATION_OUTPUT_DIR", "/home/todd/reconstructionism/validation/experiment_1/data/papers_with_embeddings")
-    limit = 100  # Start small for testing
+    limit = 4000  # Pipeline run - 4000 papers
     
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)

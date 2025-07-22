@@ -1,4 +1,4 @@
-# HADES Framework Academic Validation Strategy
+# Information Reconstructionism Academic Validation Strategy
 
 ## Executive Summary
 
@@ -133,7 +133,7 @@ This validation suite provides **rigorous mathematical proof** for all core clai
 
 ```mathematica
 (* Run this live to show mathematical rigor *)
-RunHADESValidation[]
+RunReconstructionismValidation[]
 
 (* This will display:
 - Multiplicative model validation ✓

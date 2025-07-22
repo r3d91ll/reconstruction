@@ -1,4 +1,4 @@
-(* HADES Framework Validation Runner *)
+(* Information Reconstructionism Validation Runner *)
 (* Execute core mathematical validations for Information Reconstructionism *)
 
 Print["================================================"];
@@ -61,7 +61,7 @@ actualDimensions = 2048;
 Print["Documents: ", n];
 Print["Distortion tolerance: ", epsilon];
 Print["Theoretical minimum dimensions: ", Round[minDimensions]];
-Print["HADES allocation: ", actualDimensions];
+Print["Reconstructionist allocation: ", actualDimensions];
 Print["Compression ratio: ", N[actualDimensions/minDimensions], 
       If[actualDimensions > minDimensions, " ✓ Feasible", " ✗ Infeasible"]];
 

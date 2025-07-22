@@ -39,9 +39,9 @@ def run_pipeline(num_papers=10):
     
     # Create output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    test_dir = f"/home/todd/reconstructionism/validation/results/run_{num_papers}_{timestamp}"
+    test_dir = f"/home/todd/reconstructionism/validation/experiment_1/results/run_{num_papers}_{timestamp}"
     os.makedirs(test_dir, exist_ok=True)
-    os.environ["VALIDATION_OUTPUT_DIR"] = os.path.join(test_dir, "data")
+    os.environ["VALIDATION_OUTPUT_DIR"] = os.path.join(test_dir, "data/papers_with_embeddings")
     
     # Create/update the run script
     test_script_path = update_step1_for_run(num_papers)

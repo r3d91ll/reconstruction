@@ -232,7 +232,7 @@ This principle necessitates multiplicative rather than additive relationships be
 
 ### Theoretical Lineage: Extending Shannon's Abstraction Method
 
-Just as Shannon (1948) revolutionized communication theory by abstracting away semantic meaning to focus on information transmission, HADES applies the same radical abstraction to spatial dimensions. Shannon demonstrated that semantic content—seemingly essential to communication—could be safely ignored for transmission purposes. Similarly, we demonstrate that spatial relationships—seemingly essential to information location—can be safely compressed when they are tertiary to the analytical objectives.
+Just as Shannon (1948) revolutionized communication theory by abstracting away semantic meaning to focus on information transmission, reconstructionism applies the same radical abstraction to spatial dimensions. Shannon demonstrated that semantic content—seemingly essential to communication—could be safely ignored for transmission purposes. Similarly, we demonstrate that spatial relationships—seemingly essential to information location—can be safely compressed when they are tertiary to the analytical objectives.
 
 This parallel is not coincidental but methodological: both frameworks achieve mathematical tractability and practical utility by aggressively abstracting away dimensions that seem important but prove to be analytically tertiary within their specific domains. Shannon's key insight was that the engineering problem of communication could be separated from the semantic problem of meaning. Our corresponding insight is that the analytical problem of information transformation can be separated from the geometric problem of spatial relationships—but only when those relationships are tertiary to the analysis at hand.
 
@@ -242,11 +242,11 @@ The power of this approach lies not in what it includes, but in what it strategi
 
 #### Observer Hierarchy Definition
 
-The HADES framework distinguishes between two hierarchical levels of observers:
+The reconstructionist framework distinguishes between two hierarchical levels of observers:
 
 **Analyst-Observer (A-Observer)**:
 
-- External entity constructing and analyzing the HADES framework
+- External entity constructing and analyzing the reconstructionist framework
 - Possesses omnipresent perspective across entire graph structure
 - Can simulate any System-Observer viewpoint while maintaining meta-awareness
 - Not subject to FRAME constraints or dimensional limitations
@@ -468,7 +468,7 @@ Policy_outcome = ∏(Network_i_CONVEYANCE × Political_constraints_i)
 
 The "turtles all the way up/down" nature of bureaucratic networks means entropy compounds at each level, explaining why theoretical purity leads to implementation chaos.
 
-For detailed mathematical proofs and implementation methodology, see the [HADES Methodology Appendix](./HADES_methodology_appendix.md).
+For detailed mathematical proofs and implementation methodology, see the [Methodology Appendix](./methodology_appendix.md).
 
 ### Dimensional Consistency and Justification
 
@@ -480,7 +480,7 @@ The multiplicative relationship WHERE × WHAT × CONVEYANCE × TIME has raised q
    - H(X,Y) = H(X) + H(Y|X) for information content combination
    - Measures bits of information when combining messages
 
-2. **HADES Multiplicative Structure**: Models functional CAPABILITY requirements for information transfer
+2. **Reconstructionist Multiplicative Structure**: Models functional CAPABILITY requirements for information transfer
    - Information_Access = WHERE × WHAT × CONVEYANCE × TIME
    - Measures prerequisites that must ALL be satisfied
 
@@ -490,7 +490,7 @@ These operate in different mathematical domains with different purposes. The mul
 - Boolean logic: AND gates require all inputs (multiplicative behavior)
 - Fault tree analysis: Success requires all path components
 
-There is no theoretical conflict—Shannon's principles remain valid within the information content domain while HADES operates in the capability modeling domain.
+There is no theoretical conflict—Shannon's principles remain valid within the information content domain while reconstructionism operates in the capability modeling domain.
 
 #### Temporal Analysis Application
 
@@ -661,7 +661,7 @@ Hypothetical Example: PageRank paper → pagerank.py implementation
 
 ### Theoretical Implications
 
-The HADES framework represents a paradigm shift in information theory by:
+The reconstructionist framework represents a paradigm shift in information theory by:
 
 1. **Formalizing Observer-Dependency**: Moving beyond Shannon's observer-independent model to accommodate situated knowledge and perspective-based information content. The framework explicitly models how System-Observers within the domain experience information differently based on their positional constraints, while Analyst-Observers maintain omnipresent analytical perspective.
 
@@ -702,14 +702,14 @@ The multiplicative model with context amplification enables:
 
 #### Framework Applicability Boundaries
 
-The HADES framework operates under specific assumptions that define its domain of applicability:
+The reconstructionist framework operates under specific assumptions that define its domain of applicability:
 
 1. **Spatial Compression Dependency**: The framework's WHERE dimension compresses 3D spatial relationships into 1D hierarchical structures (e.g., filesystem paths). This compression works when:
    - The abstraction layer pre-exists (filesystems, organizational hierarchies)
    - Observer scale >> spatial variation scale
    - Spatial relationships are tertiary to analytical objectives
 
-2. **Geographic Analysis Limitations**: HADES is fundamentally unsuitable for geographic information systems (GIS) or spatial analysis where:
+2. **Geographic Analysis Limitations**: Reconstructionism is fundamentally unsuitable for geographic information systems (GIS) or spatial analysis where:
    - Spatial relationships are primary (not tertiary)
    - 3D→1D compression loses critical information
    - Observer scale ≈ spatial variation scale
@@ -730,11 +730,11 @@ The HADES framework operates under specific assumptions that define its domain o
 
 4. **Cross-Domain Transfer**: The framework needs evaluation on cross-domain information transfer tasks.
 
-5. **Abstraction Layer Requirement**: HADES requires pre-existing spatial abstractions (filesystems, databases, organizational structures). It cannot create these abstractions—only leverage them.
+5. **Abstraction Layer Requirement**: Reconstructionism requires pre-existing spatial abstractions (filesystems, databases, organizational structures). It cannot create these abstractions—only leverage them.
 
 ## Methodology
 
-For detailed mathematical proofs, implementation methodology, and empirical validation approaches, see the comprehensive [HADES Methodology Appendix](./HADES_methodology_appendix.md). This appendix includes:
+For detailed mathematical proofs, implementation methodology, and empirical validation approaches, see the comprehensive [Methodology Appendix](./methodology_appendix.md). This appendix includes:
 
 - Mathematical foundations and proofs for the multiplicative model
 - Dimensional allocation justifications based on information theory
@@ -744,7 +744,7 @@ For detailed mathematical proofs, implementation methodology, and empirical vali
 
 ## Conclusion and Future Research
 
-This research proposal presents Information Reconstructionism through the HADES framework as a potentially transformative approach to understanding information as observer-dependent transformation. By proposing to formalize four dimensional prerequisites with exponential context amplification, we aim to create a unified framework that could bridge theoretical computer science with practical AI applications.
+This research proposal presents Information Reconstructionism as a potentially transformative approach to understanding information as observer-dependent transformation. By proposing to formalize four dimensional prerequisites with exponential context amplification, we aim to create a unified framework that could bridge theoretical computer science with practical AI applications.
 
 The proposed insights—multiplicative dependency modeling, exponential context amplification, and observer-relative information existence—have the potential to offer both theoretical advances and practical tools for next-generation information systems. The framework's application to temporal semantic analysis could demonstrate immediate utility while its broader implications for culturally-aware AI and enhanced RAG systems suggest transformative potential.
 

@@ -10,12 +10,14 @@ Build and validate a semantic similarity graph as the foundation for Information
 experiment_1/
 ├── README.md              # This file
 ├── pipeline/              # Core pipeline scripts
-│   ├── step1_*.py        # Embedding generation
-│   ├── step2_*.py        # ArangoDB loading
-│   ├── step3_*.py        # Similarity computation
-│   ├── step4_*.py        # Context amplification
-│   ├── test_pipeline_10.py
-│   └── run_batch.py
+│   ├── extract_pdfs_docling.py    # PDF content extraction with Docling
+│   ├── step1_*.py                 # Embedding generation
+│   ├── step2_*.py                 # ArangoDB loading
+│   ├── step3_*.py                 # Similarity computation
+│   ├── step4_*.py                 # Context amplification
+│   ├── run_pipeline.py            # Main pipeline runner
+│   ├── generate_graph_report.py   # Final analysis report
+│   └── check_*.py                 # Utility scripts
 ├── wolfram/               # Wolfram validation scripts
 │   ├── *.wl              # Wolfram Language scripts
 │   └── *_validation.py   # Python validation
@@ -23,7 +25,10 @@ experiment_1/
 │   ├── graph_data.json
 │   └── graph_data.wl
 ├── docs/                  # Documentation
+│   ├── PDF_EXTRACTION_REQUIREMENTS.md
 │   └── *.md              # Reports and specs
+├── results/               # Pipeline run results
+│   └── run_N_timestamp/  # Each run's output
 └── archive/               # Old/experimental scripts
 ```
 
@@ -34,9 +39,26 @@ Information(i→j|S-O) = WHERE × WHAT × CONVEYANCE × TIME × FRAME
 ```
 
 This experiment focuses on the **WHERE × WHAT × Context** slice, where:
-- **WHERE**: Paper location (arxiv_id, categories)
-- **WHAT**: Semantic content (2048-dim Jina embeddings)
+- **WHERE**: Paper location (arxiv_id, categories) - stored as metadata
+- **WHAT**: Semantic content (ALL 2048 dimensions from Jina embeddings)
 - **Context**: Semantic similarity (cosine similarity > 0.5)
+
+### Important: Dimensional Allocation
+
+**Current Implementation (Experiment 1):**
+- Using **ALL 2048 dimensions** for semantic content (WHAT)
+- WHERE, TIME stored as metadata fields (not embedded)
+- CONVEYANCE not yet implemented
+- FRAME implicit (single observer perspective)
+
+**Future Implementation (Full Theory):**
+- WHERE: 64 dimensions
+- WHAT: 1024 dimensions  
+- CONVEYANCE: 936 dimensions
+- TIME: 24 dimensions
+- Total: 2048 dimensions
+
+This experiment validates pure semantic similarity first before introducing dimensional allocation.
 
 ## Pipeline Components (in order)
 
@@ -66,23 +88,59 @@ This experiment focuses on the **WHERE × WHAT × Context** slice, where:
 - `run_batch.py` - Run pipeline on N papers
 - `verify_graph.py` - Verify graph structure and queries
 
-## Usage
+## Full Pipeline Process (With PDF Content)
+
+### Prerequisites
+1. Papers with JSON metadata in `/home/todd/olympus/Erebus/unstructured/papers/`
+2. Corresponding PDF files in the same directory
+3. Docling installed: `pip install docling`
+
+### Step 1: Extract Full PDF Content
+```bash
+cd pipeline
+python3 extract_pdfs_docling.py --papers-dir /home/todd/olympus/Erebus/unstructured/papers --limit 4000
+```
+- Extracts full PDF content using IBM's Docling
+- Preserves document structure (sections, figures, tables, equations)
+- Adds `pdf_content` field to each JSON
+- Generates embeddings from complete papers (not just abstracts)
+- **Processing time**: ~30-60 seconds per paper
+
+### Step 2: Run Complete Pipeline
+```bash
+python3 run_pipeline.py 4000
+```
+This executes:
+1. **step1_generate_embeddings_jina.py**: Uses full PDF content for embeddings
+2. **step2_load_arangodb.py**: Loads papers as nodes
+3. **step3_compute_similarity.py**: GPU-accelerated similarity computation
+4. **step4_context_amplification_batch.py**: Applies Context^1.5
+
+### Step 3: Generate Analysis Report
+```bash
+python3 generate_graph_report.py
+```
+- Analyzes graph structure
+- Identifies milestone papers
+- Finds theory-practice bridges
+- Creates visualizations
+
+## Usage (Quick Test)
 
 ```bash
 # Set environment variables
 export ARANGO_HOST="http://192.168.1.69:8529"
 export ARANGO_USERNAME="root"
 export ARANGO_PASSWORD="your_password"
-export WOLFRAM_APP_ID="your_app_id"
 
-# Test pipeline
-python test_pipeline_10.py
+# Quick test with abstracts only
+python3 test_pipeline_10.py
 
-# Run on 1000 papers
-python run_batch.py 1000
+# Check year distribution
+python3 check_year_distribution.py
 
 # Verify results
-python verify_graph.py
+python3 verify_graph.py
 ```
 
 ## What This Pipeline Measures
@@ -97,6 +155,24 @@ python verify_graph.py
 1. **Zero Propagation**: Validated ✓
 2. **Context Amplification**: Context^1.5 creates clustering ✓
 3. **Graph Structure**: Full connectivity at threshold 0.5 ✓
+
+## Abstract vs Full Content Comparison
+
+### Abstract-Only Embeddings
+- **Content**: ~1KB per paper (title + abstract + categories)
+- **Processing**: ~0.1 seconds per paper
+- **Use case**: Quick semantic overview
+- **Limitations**: Misses implementation details
+
+### Full PDF Embeddings (with Docling)
+- **Content**: ~50-100KB per paper (complete text + figures + tables)
+- **Processing**: ~30-60 seconds per paper
+- **Use case**: Deep theory-practice bridge discovery
+- **Advantages**: 
+  - Captures implementation details
+  - Includes code examples
+  - Preserves figure context
+  - Enables true conveyance measurement
 
 ## What We Need Next
 

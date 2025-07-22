@@ -220,9 +220,9 @@ def main():
     print(f"Documents: {n:,}")
     print(f"Distortion tolerance: {epsilon}")
     print(f"J-L theoretical minimum: {int(min_dims)}")
-    print(f"HADES allocation: {actual_dims}")
+    print(f"Reconstructionist allocation: {actual_dims}")
     print(f"Compression beyond J-L: {min_dims/actual_dims:.1f}x")
-    print(f"✓ HADES uses domain knowledge to compress beyond J-L bounds")
+    print(f"✓ Reconstructionism uses domain knowledge to compress beyond J-L bounds")
     
     # Generate plots
     print("\n5. GENERATING VISUALIZATIONS")

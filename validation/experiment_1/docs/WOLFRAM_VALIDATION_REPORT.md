@@ -69,10 +69,10 @@ Information[where_, what_, conveyance_, time_, frame_] :=
 - Documents: 10,000,000
 - Distortion tolerance: 10%
 - J-L minimum dimensions: 13,815
-- HADES allocation: 2,048
+- Reconstructionist allocation: 2,048
 - Compression beyond J-L: 6.7x
 
-**Note**: HADES uses domain knowledge to compress beyond J-L bounds
+**Note**: Reconstructionism uses domain knowledge to compress beyond J-L bounds
 
 **Conclusion**: Dimensional allocation validated ✓
 
@@ -95,7 +95,7 @@ actionable = conveyance × (1 - entropy)
 
 **Conclusion**: Physical grounding reduces entropy ✓
 
-### Test 6: HADES Convergence Theorem ✓
+### Test 6: Reconstructionist Convergence Theorem ✓
 
 **Theorem**: For bounded System-Observer S-O with frame Ψ(S-O), Information(i→j|S-O) converges as dimensions approach completeness.
 

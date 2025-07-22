@@ -1,8 +1,8 @@
-# HADES Methodology Appendix
+# Reconstructionism Methodology Appendix
 
-**Methodology companion to [HADES Theory Paper](./HADES_reconstructionism_theory.md)**
+**Methodology companion to [Reconstructionism Theory Paper](./reconstructionism_theory.md)**
 
-This appendix provides detailed mathematical foundations, implementation methodology, and empirical validation approaches for the HADES (Heterogeneous Adaptive Dimensional Embedding System) framework.
+This appendix provides detailed mathematical foundations, implementation methodology, and empirical validation approaches for the reconstructionist approach.
 
 ## Table of Contents
 
@@ -208,7 +208,7 @@ The Johnson-Lindenstrauss lemma provides minimum dimensionality requirements.
 d ≥ 4(ε²/2 - ε³/3)⁻¹ × ln(n)
 ```
 
-**Application to HADES**:
+**Application to Reconstructionism**:
 
 ```python
 import numpy as np
@@ -524,9 +524,9 @@ def measure_transformation_entropy(content, grounding_factor):
 ### C.4 Complete DSPy Integration Example
 
 ```python
-class HADESConveyanceOptimizer(dspy.Module):
+class ConveyanceOptimizer(dspy.Module):
     """
-    Complete DSPy module for HADES conveyance optimization
+    Complete DSPy module for conveyance optimization
     """
     def __init__(self, alpha=1.5):
         super().__init__()
@@ -561,7 +561,7 @@ class HADESConveyanceOptimizer(dspy.Module):
         )
 
 # Training example
-optimizer = HADESConveyanceOptimizer()
+optimizer = ConveyanceOptimizer()
 trainset = [
     dspy.Example(
         source=dspy.Example(content="PageRank algorithm: Initialize all pages with equal rank..."),
@@ -863,7 +863,7 @@ practical_curves = simulator.simulate_implementation(practical_policy)
 
 ### E.1 System Specifications
 
-Current hardware configuration for HADES implementation.
+Current hardware configuration for reconstructionist implementation.
 
 ```python
 HARDWARE_SPECS = {
@@ -1146,7 +1146,7 @@ def summarize_resource_utilization():
 
 ## Conclusion
 
-This methodology appendix provides the mathematical foundations and implementation details for the HADES framework. The combination of rigorous theoretical grounding, practical implementation strategies, and hardware validation demonstrates both the feasibility and scalability of the approach.
+This methodology appendix provides the mathematical foundations and implementation details for the reconstructionist framework. The combination of rigorous theoretical grounding, practical implementation strategies, and hardware validation demonstrates both the feasibility and scalability of the approach.
 
 Key achievements:
 

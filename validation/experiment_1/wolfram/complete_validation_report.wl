@@ -130,9 +130,9 @@ dActual = 2048;
 Print[StringForm["Documents: ``", n]];
 Print[StringForm["Distortion tolerance: ``%", 100*epsilon]];
 Print[StringForm["J-L minimum dimensions: ``", Round[dMin]]];
-Print[StringForm["HADES allocation: ``", dActual]];
+Print[StringForm["Reconstructionist allocation: ``", dActual]];
 Print[StringForm["Compression beyond J-L: ``x", NumberForm[dMin/dActual, {3, 1}]]];
-Print["\nNote: HADES uses domain knowledge to compress beyond J-L bounds"];
+Print["\nNote: Information Reconstructionism uses domain knowledge to compress beyond J-L bounds"];
 Print["Conclusion: Dimensional allocation validated ✓"];
 Print[""];
 
@@ -171,7 +171,7 @@ Print["\nConclusion: Physical grounding reduces entropy ✓"];
 Print[""];
 
 (* ==================== TEST 6: CONVERGENCE PROOF ==================== *)
-Print["TEST 6: HADES CONVERGENCE THEOREM"];
+Print["TEST 6: INFORMATION RECONSTRUCTIONISM CONVERGENCE THEOREM"];
 Print["-----------------------------------------------------------------"];
 Print["Theorem: For bounded System-Observer S-O with frame Ψ(S-O),"];
 Print["Information(i→j|S-O) converges as dimensions approach completeness."];

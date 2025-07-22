@@ -1,4 +1,4 @@
-(* HADES Framework Mathematical Validation Suite *)
+(* Information Reconstructionism Mathematical Validation Suite *)
 (* Information Reconstructionism: Core Mathematical Proofs *)
 
 (* ==================== SECTION 1: MULTIPLICATIVE MODEL VALIDATION ==================== *)
@@ -89,10 +89,10 @@ ValidateContextAmplification[] := Module[{α, context, results},
 ValidateJohnsonLindenstrauss[] := Module[{n, ε, dMin, dActual, ratio},
   Print["=== Johnson-Lindenstrauss Dimensional Validation ==="];
   
-  (* Parameters from HADES implementation *)
+  (* Parameters from Information Reconstructionism implementation *)
   n = 10^7; (* 10 million documents *)
   ε = 0.1; (* 10% distortion tolerance *)
-  dActual = 2048; (* HADES allocation *)
+  dActual = 2048; (* Reconstructionist allocation *)
   
   (* Calculate theoretical minimum dimensions *)
   term1 = (ε^2/2) - (ε^3/3);
@@ -105,7 +105,7 @@ ValidateJohnsonLindenstrauss[] := Module[{n, ε, dMin, dActual, ratio},
     {"Documents (n)", n},
     {"Distortion tolerance (ε)", ε},
     {"Theoretical minimum dimensions", N[dMin]},
-    {"HADES allocation", dActual},
+    {"Reconstructionist allocation", dActual},
     {"Compression ratio", N[compressionRatio]},
     {"Feasible?", compressionRatio > 1}
   };
@@ -120,7 +120,7 @@ ValidateJohnsonLindenstrauss[] := Module[{n, ε, dMin, dActual, ratio},
     AxesLabel -> {"Document Count", "Minimum Dimensions"},
     Epilog -> {Red, PointSize[0.02], 
               Point[{n, dMin}], 
-              Text["HADES\n(10M docs)", {n, dMin}, {1, -1}]}
+              Text["Reconstructionism\n(10M docs)", {n, dMin}, {1, -1}]}
   ];
   
   dimensionPlot
@@ -222,7 +222,7 @@ ValidateFractalNetworks[] := Module[{depth, conveyance, convergence},
 ValidateDimensionalAllocation[] := Module[{allocation, efficiency, utilization},
   Print["=== Dimensional Allocation Efficiency ==="];
   
-  (* HADES dimensional allocation *)
+  (* Reconstructionist dimensional allocation *)
   allocation = <|
     "WHEN" -> 24,
     "WHERE" -> 64,
@@ -255,7 +255,7 @@ ValidateDimensionalAllocation[] := Module[{allocation, efficiency, utilization},
   pieChart = PieChart[
     Values[allocation],
     ChartLabels -> Keys[allocation],
-    PlotLabel -> "HADES 2048-Dimensional Allocation",
+    PlotLabel -> "Reconstructionist 2048-Dimensional Allocation",
     ChartStyle -> {Red, Blue, Green, Orange}
   ];
   
@@ -268,11 +268,11 @@ ValidateDimensionalAllocation[] := Module[{allocation, efficiency, utilization},
 
 (* ==================== SECTION 7: CONVERGENCE PROOFS ==================== *)
 
-(* Core convergence theorem for HADES framework *)
-ProveHADESConvergence[] := Module[{},
-  Print["=== HADES Convergence Theorem ==="];
+(* Core convergence theorem for Information Reconstructionism framework *)
+ProveReconstructionistConvergence[] := Module[{},
+  Print["=== Information Reconstructionism Convergence Theorem ==="];
   
-  (* Theorem: HADES information metric converges for bounded observers *)
+  (* Theorem: Reconstructionist information metric converges for bounded observers *)
   Print["Theorem: For bounded System-Observer S-O with frame Ψ(S-O),"];
   Print["Information(i→j|S-O) converges as dimensional prerequisites approach completeness."];
   Print[];
@@ -313,7 +313,7 @@ ProveHADESConvergence[] := Module[{},
       dimensions[[All, {1, 5}]]  (* Information *)
     },
     PlotLegends -> {"WHERE", "WHAT", "CONVEYANCE", "Information"},
-    PlotLabel -> "HADES Dimensional Convergence",
+    PlotLabel -> "Reconstructionist Dimensional Convergence",
     AxesLabel -> {"Time Steps", "Value"},
     PlotRange -> {0, 1.1}
   ];
@@ -324,9 +324,9 @@ ProveHADESConvergence[] := Module[{},
 (* ==================== SECTION 8: COMPREHENSIVE VALIDATION SUITE ==================== *)
 
 (* Run complete validation suite *)
-RunHADESValidation[] := Module[{},
+RunReconstructionistValidation[] := Module[{},
   Print["==============================================="];
-  Print["HADES FRAMEWORK MATHEMATICAL VALIDATION SUITE"];
+  Print["INFORMATION RECONSTRUCTIONISM MATHEMATICAL VALIDATION SUITE"];
   Print["Information Reconstructionism Theory Validation"];
   Print["==============================================="];
   Print[];
@@ -350,7 +350,7 @@ RunHADESValidation[] := Module[{},
   ValidateDimensionalAllocation[];
   Print[];
   
-  ProveHADESConvergence[];
+  ProveReconstructionistConvergence[];
   Print[];
   
   Print["=== VALIDATION SUMMARY ==="];
@@ -360,10 +360,10 @@ RunHADESValidation[] := Module[{},
   Print["✓ Physical grounding reduces entropy"];
   Print["✓ Fractal networks exhibit stable convergence"];
   Print["✓ 2048-dimensional allocation is optimal"];
-  Print["✓ Core HADES theorem proven"];
+  Print["✓ Core Information Reconstructionism theorem proven"];
   Print[];
   Print["READY FOR ACADEMIC PRESENTATION"];
 ]
 
 (* Execute the complete validation *)
-RunHADESValidation[]
+RunReconstructionistValidation[]
