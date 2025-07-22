@@ -64,4 +64,3 @@ temp/
 *.dump
 *.arangodump
 
-validation/experiment_1/archive/

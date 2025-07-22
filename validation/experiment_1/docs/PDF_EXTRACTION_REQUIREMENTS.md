@@ -1,17 +1,21 @@
 # PDF Extraction Technical Requirements
 
 ## Overview
+
 Convert academic PDFs to structured Markdown with extracted images, adding the content to existing JSON metadata files for full-document embeddings.
 
 ## Input/Output Specification
 
 ### Input
+
 - **PDF files**: Academic papers (typically 8-30 pages)
 - **JSON files**: Existing metadata with title, abstract, categories, etc.
 - **Location**: `/home/todd/olympus/Erebus/unstructured/papers/`
 
 ### Output
+
 Enhanced JSON files with additional fields:
+
 ```json
 {
   // Existing fields
@@ -83,13 +87,15 @@ Enhanced JSON files with additional fields:
 ## Extraction Requirements
 
 ### 1. Text Extraction
+
 - **Preserve structure**: Maintain section hierarchy (h1, h2, h3, etc.)
 - **Clean formatting**: Remove headers, footers, page numbers
 - **Handle multi-column**: Correctly order text from multi-column layouts
 - **Unicode support**: Preserve mathematical symbols, special characters
 
 ### 2. Image Extraction
-- **Format**: Save as PNG (lossless) 
+
+- **Format**: Save as PNG (lossless)
 - **Naming**: `{paper_id}_fig{N}.png` (e.g., `2301.12345_fig1.png`)
 - **Storage**: Create `images/` subdirectory in papers folder
 - **Resolution**: Maintain original quality (min 150 DPI)
@@ -101,22 +107,26 @@ Enhanced JSON files with additional fields:
   - Screenshots
 
 ### 3. Table Extraction
+
 - **Format**: Convert to Markdown tables
 - **Complex tables**: For nested/complex tables, also save as image
 - **Captions**: Preserve table captions and numbers
 
 ### 4. Equation Extraction
+
 - **Format**: Preserve LaTeX notation
 - **Display equations**: Mark as separate blocks
 - **Inline equations**: Keep within text flow
 - **Fallback**: For complex equations, extract as image
 
 ### 5. Code Block Extraction
+
 - **Language detection**: Identify programming language
 - **Syntax preservation**: Maintain indentation and formatting
 - **Context**: Note which section contains the code
 
 ### 6. Reference Extraction
+
 - **Format**: Structured list with identifiers
 - **Linking**: Preserve in-text citation links
 - **Types**: Differentiate papers, books, URLs, etc.
@@ -171,16 +181,19 @@ def process_paper(pdf_path, json_path):
 ## Quality Requirements
 
 ### Text Quality
+
 - **Accuracy**: >95% character accuracy
 - **Structure**: Preserve document hierarchy
 - **Readability**: Clean, well-formatted Markdown
 
 ### Image Quality
+
 - **Completeness**: Extract ALL figures/diagrams
 - **Resolution**: No quality loss from original
 - **Captions**: Associate correct captions with images
 
 ### Performance
+
 - **Speed**: ~30-60 seconds per paper (10-20 pages)
 - **Memory**: Handle papers up to 200 pages
 - **Robustness**: Gracefully handle corrupted/protected PDFs
@@ -188,6 +201,7 @@ def process_paper(pdf_path, json_path):
 ## Integration with Embedding Pipeline
 
 After extraction, the embedding pipeline will:
+
 1. Load the enhanced JSON with full content
 2. Combine all text sections into a single document
 3. Include image captions and references
@@ -215,6 +229,7 @@ After extraction, the embedding pipeline will:
 ## Storage Estimate
 
 For 10,000 papers:
+
 - **Images**: ~5 images/paper × 500KB = 25GB
 - **Enhanced JSONs**: ~100KB/paper = 1GB
 - **Total additional storage**: ~26GB
