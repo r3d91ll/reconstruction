@@ -2,7 +2,8 @@
 # Launch the GPU-accelerated experiment 2 pipeline
 
 # Set environment variables
-export ARANGO_HOST="http://192.168.1.69:8529"
+# Allow ARANGO_HOST to be configured via environment variable with default fallback
+export ARANGO_HOST="${ARANGO_HOST:-http://192.168.1.69:8529}"
 export ARANGO_USERNAME="root"
 # IMPORTANT: Set ARANGO_PASSWORD before running:
 # export ARANGO_PASSWORD="your_password_here"

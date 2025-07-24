@@ -61,9 +61,24 @@ class GPUEmbeddingGenerator:
             self.model = nn.DataParallel(self.model, device_ids=device_ids)
             logger.info(f"Using DataParallel across GPUs: {device_ids}")
         
-        # Get embedding dimension
-        self.embedding_dim = self.model.module.config.hidden_size if hasattr(self.model, 'module') else self.model.config.hidden_size
-        logger.info(f"Embedding dimension: {self.embedding_dim}")
+        # Get embedding dimension with error handling
+        try:
+            self.embedding_dim = self.model.module.config.hidden_size if hasattr(self.model, 'module') else self.model.config.hidden_size
+            logger.info(f"Embedding dimension: {self.embedding_dim}")
+        except (AttributeError, KeyError) as e:
+            logger.error(f"Failed to extract embedding dimension from model: {e}")
+            # Try alternative approaches
+            try:
+                # For some models, it might be under different attributes
+                if hasattr(self.model, 'module'):
+                    self.embedding_dim = self.model.module.hidden_size
+                else:
+                    self.embedding_dim = self.model.hidden_size
+                logger.info(f"Embedding dimension (alternative method): {self.embedding_dim}")
+            except:
+                # Default to a common embedding dimension
+                self.embedding_dim = 768
+                logger.warning(f"Could not determine embedding dimension, defaulting to {self.embedding_dim}")
     
     def generate_embeddings(self, texts, batch_size=32, show_progress=True):
         """

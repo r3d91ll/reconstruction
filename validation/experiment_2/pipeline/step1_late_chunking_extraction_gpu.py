@@ -102,6 +102,7 @@ class GPUAcceleratedExtractor:
         
         current_chunk = []
         current_size = 0
+        current_position = 0  # Track current character position
         
         for section in sections:
             section_size = len(section)
@@ -114,12 +115,15 @@ class GPUAcceleratedExtractor:
                     if current_size + len(sentence) > target_chunk_size and current_chunk:
                         # Save current chunk
                         chunk_text = ' '.join(current_chunk)
+                        start_pos = current_position
+                        end_pos = current_position + len(chunk_text)
                         chunks.append({
                             'text': chunk_text,
-                            'start_char': len(full_text) - len(chunk_text),
-                            'end_char': len(full_text),
+                            'start_char': start_pos,
+                            'end_char': end_pos,
                             'chunk_id': len(chunks)
                         })
+                        current_position = end_pos
                         
                         # Start new chunk with overlap
                         overlap_text = ' '.join(current_chunk[-2:]) if len(current_chunk) > 2 else current_chunk[-1] if current_chunk else ''
@@ -133,12 +137,15 @@ class GPUAcceleratedExtractor:
                 if current_size + section_size > target_chunk_size and current_chunk:
                     # Save current chunk
                     chunk_text = ' '.join(current_chunk)
+                    start_pos = current_position
+                    end_pos = current_position + len(chunk_text)
                     chunks.append({
                         'text': chunk_text,
-                        'start_char': len(full_text) - len(chunk_text),
-                        'end_char': len(full_text),
+                        'start_char': start_pos,
+                        'end_char': end_pos,
                         'chunk_id': len(chunks)
                     })
+                    current_position = end_pos
                     
                     # Start new chunk
                     current_chunk = [section]
@@ -150,10 +157,12 @@ class GPUAcceleratedExtractor:
         # Don't forget the last chunk
         if current_chunk:
             chunk_text = ' '.join(current_chunk)
+            start_pos = current_position
+            end_pos = current_position + len(chunk_text)
             chunks.append({
                 'text': chunk_text,
-                'start_char': len(full_text) - len(chunk_text),
-                'end_char': len(full_text),
+                'start_char': start_pos,
+                'end_char': end_pos,
                 'chunk_id': len(chunks)
             })
         

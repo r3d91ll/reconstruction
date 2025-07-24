@@ -116,7 +116,9 @@ class GPUMultiscaleAnalyzer:
             avg_degree = degrees.mean().item()
             
             # Identify clusters (simplified spectral clustering on GPU)
-            eigenvalues, eigenvectors = torch.linalg.eigh(adjacency)
+            # Symmetrize the adjacency matrix to ensure it's symmetric
+            adjacency_symmetric = (adjacency + adjacency.T) / 2
+            eigenvalues, eigenvectors = torch.linalg.eigh(adjacency_symmetric)
             
             # Use top eigenvectors for clustering
             n_clusters = min(10, len(embeddings) // 10)
@@ -340,7 +342,7 @@ def main():
     logger.info("\n5. Generating Visualizations...")
     
     # Context amplification plot
-    if 'context_result' in locals():
+    if 'context_result' in locals() and 'same_paper_sims' in locals() and same_paper_sims:
         plt.figure(figsize=(10, 6))
         plt.scatter([c for _, c in same_paper_sims[:1000]], 
                    [s for s, _ in same_paper_sims[:1000]], 

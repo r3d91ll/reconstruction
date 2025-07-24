@@ -6,12 +6,13 @@ Test script to verify GPU acceleration for similarity computation
 import torch
 import numpy as np
 import time
+import sys
 
 def test_gpu_similarity():
     # Check GPU availability
     if not torch.cuda.is_available():
         print("CUDA is not available!")
-        return
+        sys.exit(1)
     
     gpu_count = torch.cuda.device_count()
     print(f"Found {gpu_count} GPUs:")
@@ -94,6 +95,8 @@ def test_gpu_similarity():
         print(f"  GPU out of memory at {max_n} embeddings")
     finally:
         torch.cuda.empty_cache()
+    
+    return 0
 
 if __name__ == "__main__":
-    test_gpu_similarity()
+    sys.exit(test_gpu_similarity())

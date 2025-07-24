@@ -77,9 +77,6 @@ def main():
     # Process chunks in batches
     logger.info("\nProcessing chunks with memory-efficient batching...")
     
-    # Get chunk count for progress tracking
-    chunk_count = chunks_coll.count()
-    
     # Use batch processing to avoid loading all chunks into memory at once
     chunk_batch_size = int(os.environ.get("EXP2_CHUNK_BATCH_SIZE", "100"))
     logger.info(f"Processing chunks in batches of {chunk_batch_size}")

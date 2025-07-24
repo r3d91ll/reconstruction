@@ -9,7 +9,8 @@ export EXP2_DB_NAME="information_reconstructionism_exp2"
 export EXP2_RESULTS_DIR="./validation/experiment_2/results"
 
 # ArangoDB connection details
-export ARANGO_HOST="http://192.168.1.69:8529"
+# Allow ARANGO_HOST to be configured via environment variable with default fallback
+export ARANGO_HOST="${ARANGO_HOST:-http://192.168.1.69:8529}"
 export ARANGO_USERNAME="root"
 # You'll need to set ARANGO_PASSWORD manually or source it from a secure location
 

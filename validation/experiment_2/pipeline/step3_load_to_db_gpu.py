@@ -80,7 +80,7 @@ def process_embedding_file(file_path, gpu_processor):
     paper_id = data.get('paper_id')
     if not paper_id:
         # Fallback: try to get from filename
-        paper_id = file_path.stem
+        paper_id = Path(file_path).stem
     chunks = data.get('chunks', [])
     
     # Extract embeddings
@@ -262,9 +262,9 @@ def main():
     logger.info(f"Loading rate: {chunks_count/duration:.1f} chunks/second")
     
     # GPU memory stats
-    allocated = torch.cuda.memory_allocated(gpu_id) / 1024**3
-    reserved = torch.cuda.memory_reserved(gpu_id) / 1024**3
-    logger.info(f"\nGPU {gpu_id} memory usage:")
+    allocated = torch.cuda.memory_allocated(gpu_processor.device) / 1024**3
+    reserved = torch.cuda.memory_reserved(gpu_processor.device) / 1024**3
+    logger.info(f"\nGPU {gpu_processor.device} memory usage:")
     logger.info(f"  Allocated: {allocated:.2f} GB")
     logger.info(f"  Reserved: {reserved:.2f} GB")
     

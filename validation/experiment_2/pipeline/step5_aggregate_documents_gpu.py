@@ -151,17 +151,32 @@ def main():
     logger.info("\nLoading chunk embeddings...")
     chunks_by_paper = defaultdict(list)
     
-    query = """
-    FOR chunk IN chunks_exp2
-        RETURN {
-            paper_id: chunk.paper_id,
-            chunk_id: chunk.chunk_id,
-            embedding: chunk.embedding
-        }
-    """
+    # Process in batches to avoid memory issues
+    batch_size = 10000
+    offset = 0
+    total_chunks = db['chunks_exp2'].count()
     
-    for result in tqdm(db.aql.execute(query, batch_size=10000), desc="Loading chunks"):
-        chunks_by_paper[result['paper_id']].append(result['embedding'])
+    with tqdm(total=total_chunks, desc="Loading chunks") as pbar:
+        while True:
+            query = f"""
+            FOR chunk IN chunks_exp2
+                LIMIT {offset}, {batch_size}
+                RETURN {{
+                    paper_id: chunk.paper_id,
+                    chunk_id: chunk.chunk_id,
+                    embedding: chunk.embedding
+                }}
+            """
+            
+            results = list(db.aql.execute(query))
+            if not results:
+                break
+                
+            for result in results:
+                chunks_by_paper[result['paper_id']].append(result['embedding'])
+            
+            pbar.update(len(results))
+            offset += batch_size
     
     logger.info(f"Loaded embeddings for {len(chunks_by_paper)} papers")
     

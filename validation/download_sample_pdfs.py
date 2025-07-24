@@ -104,8 +104,11 @@ def main():
         # Create symlinks
         for pdf in output_dir.glob("*.pdf"):
             symlink = exp_dir / pdf.name
-            if not symlink.exists():
-                symlink.symlink_to(pdf.absolute())
+            # Remove existing symlink if it exists
+            if symlink.exists() and symlink.is_symlink():
+                symlink.unlink()
+            # Create new symlink
+            symlink.symlink_to(pdf.absolute())
     
     print(f"\n✓ Created symlinks in experiment directories")
 
