@@ -1144,11 +1144,144 @@ def summarize_resource_utilization():
     }
 ```
 
+## F. Critical Limitations and Future Work
+
+### F.1 Observer Framework Implementation Gap
+
+The most significant limitation in our current framework is the abandonment of observer-dependency in the actual implementation, despite it being philosophically central to the theory.
+
+#### The Problem
+
+Our theory emphasizes that information exists differently for different System-Observers based on their positional constraints:
+
+```
+Information(i→j|S-Observer₁) ≠ Information(i→j|S-Observer₂)
+```
+
+However, the 2048-dimensional implementation contains no explicit observer parameters:
+- WHERE: 64 dimensions (spatial encoding)
+- WHAT: 1024 dimensions (semantic content)  
+- CONVEYANCE: 936 dimensions (transformation capability)
+- WHEN: 24 dimensions (temporal position)
+- **OBSERVER: 0 dimensions** ← The critical gap
+
+The FRAME function, meant to capture observer boundaries and perspectives, reduces to a simple binary gate that vanishes in practice:
+
+```python
+# Current implementation (oversimplified)
+if FRAME(i,j|S-O) == 1:
+    compute_information()
+else:
+    return 0
+```
+
+This represents a fundamental philosophical-mathematical misalignment where the framework's central innovation becomes decorative rather than functional.
+
+#### Why This Happened
+
+1. **Computational Tractability**: Encoding all possible observer perspectives would require exponential dimensionality
+2. **Lack of Observer Taxonomy**: We haven't developed a systematic way to categorize and encode observer types
+3. **Measurement Challenge**: How do we empirically measure different observer perspectives?
+4. **Prioritization**: We focused on proving the multiplicative model and context amplification first
+
+#### Proposed Solutions for Future Work
+
+**Solution 1: Observer Type Embedding (Additional 256 dimensions)**
+
+```python
+OBSERVER_DIMENSIONS = {
+    'role_encoding': 64,          # Professional role/expertise
+    'knowledge_state': 64,        # Prior knowledge representation  
+    'goal_alignment': 64,         # Task/objective encoding
+    'constraint_encoding': 64     # Access restrictions, capabilities
+}
+```
+
+**Solution 2: Compositional Observer Modeling**
+
+Rather than fixed dimensions, model observers as functions that transform the base dimensions:
+
+```python
+def observer_transform(base_vector, observer_params):
+    """
+    Each observer type defines a transformation of the base space
+    """
+    role_matrix = observer_params['role_projection']
+    knowledge_filter = observer_params['knowledge_mask']
+    goal_weighting = observer_params['goal_weights']
+    
+    # Observer-specific view of information
+    observed_vector = (
+        role_matrix @ base_vector * 
+        knowledge_filter * 
+        goal_weighting
+    )
+    return observed_vector
+```
+
+**Solution 3: Multi-View Architecture**
+
+Maintain separate embedding spaces for different observer classes:
+
+```python
+class MultiViewEmbedding:
+    def __init__(self):
+        self.views = {
+            'researcher': EmbeddingSpace(2048),
+            'practitioner': EmbeddingSpace(2048),
+            'student': EmbeddingSpace(2048),
+            'ai_system': EmbeddingSpace(2048)
+        }
+    
+    def get_information(self, source, target, observer_type):
+        view = self.views[observer_type]
+        return view.compute_information(source, target)
+```
+
+### F.2 Dynamic TIME Dimension
+
+Currently, TIME is held constant at 1.0, treating all analyses as snapshots. This ignores:
+
+1. **Transformation Dynamics**: How quickly can information transform?
+2. **Temporal Dependencies**: Some transformations require specific timing
+3. **Evolution Modeling**: How information effectiveness changes over time
+
+Future work must implement:
+
+```python
+TIME(t) = base_rate * temporal_relevance(t) * transformation_velocity(t)
+```
+
+### F.3 Empirical Validation Gaps
+
+While we have mathematical proofs, we lack:
+
+1. **Observer Perspective Validation**: Empirical evidence that different observers experience different information
+2. **Context Exponent Measurement**: Domain-specific α values need empirical determination
+3. **Anti-Context Detection**: Real-world validation of theoretical vs practical content
+4. **Transformation Tracking**: Measuring actual information transformations in practice
+
+### F.4 Scalability Beyond Proof-of-Concept
+
+The 10M document validation is promising but leaves questions:
+
+1. **Billion-Scale Performance**: How does the framework perform at web scale?
+2. **Dynamic Updates**: Current design assumes static corpus
+3. **Distributed Implementation**: Single-node limitations
+4. **Cross-Domain Transfer**: How well do embeddings work across disciplines?
+
+### F.5 Theoretical Gaps
+
+Several theoretical questions remain:
+
+1. **Observer Compositionality**: How do observer perspectives combine in collaborative settings?
+2. **Information Conservation**: Is there a conservation law for information transformation?
+3. **Quantum Observer Effects**: Does observation itself transform information (beyond access)?
+4. **Emergence Properties**: What emergent behaviors arise in large-scale implementations?
+
 ## Conclusion
 
-This methodology appendix provides the mathematical foundations and implementation details for the reconstructionist framework. The combination of rigorous theoretical grounding, practical implementation strategies, and hardware validation demonstrates both the feasibility and scalability of the approach.
-
-Key achievements:
+This methodology appendix provides the mathematical foundations and implementation details for the reconstructionist framework. While significant work remains—particularly in implementing true observer-dependency—the framework demonstrates:
 
 1. **Mathematical rigor**: Formal proofs for multiplicative model and context amplification
 2. **Physical grounding**: Distinguished theoretical context from actionable conveyance
@@ -1156,4 +1289,6 @@ Key achievements:
 4. **Hardware validation**: Confirmed 10M document proof-of-concept feasibility
 5. **DSPy integration**: Practical implementation with grounding-aware optimization
 
-The framework is ready for implementation and empirical validation at the proposed scale.
+The critical next step is implementing genuine observer-dependent information encoding, transforming the philosophical insight into computational reality. Without this, the framework remains an elegant theory with a contradictory implementation—precisely the kind of high-semantic, low-grounding system our own theory critiques.
+
+The framework is ready for initial empirical validation while acknowledging these fundamental limitations that must be addressed in future iterations.

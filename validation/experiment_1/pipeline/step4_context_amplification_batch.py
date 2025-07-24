@@ -45,6 +45,7 @@ def main():
             batch_query = """
             FOR edge IN semantic_similarity
                 LIMIT @offset, @batch_size
+                FILTER edge.context_original == null
                 UPDATE edge WITH {
                     context_original: edge.context,
                     context: POW(edge.context, @alpha),
@@ -149,8 +150,12 @@ def main():
     for i, result in enumerate(db.aql.execute(top_query), 1):
         print(f"\n{i}. {result['from_title']}...")
         print(f"   ↔ {result['to_title']}...")
-        print(f"   Original: {result['original']:.3f} → Amplified: {result['amplified']:.3f}")
-        print(f"   Amplification factor: {result['factor']:.3f}x")
+        if result['original'] is not None and result['amplified'] is not None:
+            print(f"   Original: {result['original']:.3f} → Amplified: {result['amplified']:.3f}")
+            if result['factor'] is not None:
+                print(f"   Amplification factor: {result['factor']:.3f}x")
+        else:
+            print(f"   Amplified similarity: {result['amplified']:.3f}")
     
     print(f"\n✓ STEP 4 COMPLETE")
     print(f"Context^{alpha} amplification applied successfully")

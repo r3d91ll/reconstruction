@@ -116,42 +116,57 @@ def validate_with_real_data():
     print("-" * 40)
     
     # Load exported data
-    data_path = "/home/todd/reconstructionism/validation/wolfram/data/graph_data.json"
+    data_path = "/home/todd/reconstructionism/validation/experiment_1/wolfram/data/wolfram_data_export.json"
     if os.path.exists(data_path):
         with open(data_path, 'r') as f:
             data = json.load(f)
         
         # Analyze context distribution
-        if "context_distribution" in data:
-            original = data["context_distribution"]["original"]
-            amplified = data["context_distribution"]["amplified"]
+        if "context_amplification" in data:
+            data_points = data["context_amplification"]["data_points"]
             
-            if original and amplified:
+            if data_points:
+                original = [p[0] for p in data_points]
+                amplified = [p[1] for p in data_points]
+                
                 print(f"\n  Context Distribution Analysis:")
+                print(f"    Data points: {len(data_points)}")
                 print(f"    Original: mean={np.mean(original):.3f}, std={np.std(original):.3f}")
                 print(f"    Amplified: mean={np.mean(amplified):.3f}, std={np.std(amplified):.3f}")
                 
                 # Test normality
-                _, p_value = stats.normaltest(original)
+                _, p_value = stats.normaltest(original[:1000])  # Sample for test
                 print(f"    Normality test p-value: {p_value:.3f}")
                 print(f"    Distribution: {'Normal' if p_value > 0.05 else 'Non-normal'}")
                 
-                # Verify amplification
-                alpha = 1.5
-                predicted = [x**alpha for x in original]
-                mse = np.mean([(a - p)**2 for a, p in zip(amplified, predicted)])
-                print(f"    Amplification MSE: {mse:.6f}")
+                # Estimate alpha from data
+                # For each pair, calculate log(amplified)/log(original)
+                estimated_alphas = []
+                for orig, amp in data_points[:1000]:
+                    if orig > 0.1 and amp > 0:  # Avoid numerical issues
+                        est_alpha = np.log(amp) / np.log(orig)
+                        if 0.5 < est_alpha < 2.0:  # Reasonable range
+                            estimated_alphas.append(est_alpha)
+                
+                if estimated_alphas:
+                    print(f"    Estimated α from data: {np.mean(estimated_alphas):.3f} (σ={np.std(estimated_alphas):.3f})")
         
         # Check zero propagation in real data
         if "zero_propagation" in data:
+            test_cases = data["zero_propagation"]["test_cases"]
+            summary = data["zero_propagation"]["summary"]
+            
             violations = 0
-            for item in data["zero_propagation"]:
+            for item in test_cases:
                 has_zero = any(item[d] == 0 for d in ["WHERE", "WHAT", "CONVEYANCE", "TIME"])
                 if has_zero and item["INFORMATION"] != 0:
                     violations += 1
             
             print(f"\n  Zero Propagation Check:")
-            print(f"    Tested: {len(data['zero_propagation'])} papers")
+            print(f"    Total papers: {summary['total_papers']}")
+            print(f"    Papers with zero dimension: {summary['with_zero_dimension']}")
+            print(f"    Papers with zero information: {summary['zero_information']}")
+            print(f"    Test cases checked: {len(test_cases)}")
             print(f"    Violations: {violations}")
             print(f"    Result: {'✓ PASSED' if violations == 0 else '✗ FAILED'}")
     else:
