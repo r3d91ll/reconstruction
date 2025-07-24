@@ -64,3 +64,5 @@ temp/
 *.dump
 *.arangodump
 
+validation/data/raw_pdfs/*
+    

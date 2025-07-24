@@ -24,11 +24,19 @@ import re
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
 
-def extract_primitives_from_chunks(chunks_dir="/home/todd/reconstructionism/validation/experiment_2/data/chunks"):
-    """Extract semantic primitives from late-chunked embeddings."""
+def extract_primitives_from_chunks(chunks_dir=None, limit=100):
+    """Extract semantic primitives from late-chunked embeddings.
+    
+    Args:
+        chunks_dir: Directory containing chunk files (default: relative to script)
+        limit: Maximum number of papers to process (default: 100)
+    """
+    
+    if chunks_dir is None:
+        chunks_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'chunks')
     
     print("Loading chunked embeddings...")
-    chunk_files = glob(os.path.join(chunks_dir, "*_chunks.json"))[:100]  # Start with 100 papers
+    chunk_files = glob(os.path.join(chunks_dir, "*_chunks.json"))[:limit]
     
     all_chunks = []
     primitive_counts = Counter()
@@ -353,7 +361,8 @@ def main():
     print("Generating 3D Semantic Primitive Visualizations from Chunks...")
     
     # Create output directory
-    output_dir = "/home/todd/reconstructionism/validation/experiment_2/analysis/chunk_primitives"
+    output_dir = os.environ.get('CHUNK_PRIMITIVES_OUTPUT_DIR', 
+                               os.path.join(os.path.dirname(__file__), 'chunk_primitives'))
     os.makedirs(output_dir, exist_ok=True)
     
     # Extract primitives from chunks

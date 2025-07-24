@@ -2,10 +2,21 @@
 # Test pipeline with existing 5-paper chunks
 
 echo "Testing experiment_2 pipeline with existing chunks..."
-echo "Using chunks from: ../results/exp2_run_5_20250724_013320/chunks/"
+
+# Check if chunks directory exists
+CHUNKS_DIR="../results/exp2_run_5_20250724_013320/chunks/"
+if [ ! -d "$CHUNKS_DIR" ]; then
+    echo "Error: Chunks directory does not exist at $CHUNKS_DIR"
+    echo "Please ensure the chunks directory exists before running this script."
+    exit 1
+fi
+
+echo "Using chunks from: $CHUNKS_DIR"
 
 # Set environment variables
-export EXP2_RESULTS_DIR="/home/todd/reconstructionism/validation/experiment_2/results/exp2_run_5_20250724_013320"
+# Use relative path or environment variable for results directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export EXP2_RESULTS_DIR="${EXP2_RESULTS_DIR:-$SCRIPT_DIR/../results/exp2_run_5_20250724_013320}"
 export EXP2_DB_NAME="information_reconstructionism_exp2"
 export EXP2_BATCH_SIZE="1000"
 export EXP2_SIM_THRESHOLD="0.5"

@@ -24,9 +24,18 @@ def main():
     chunks_dir = os.path.join(results_dir, "chunks")
     
     # ArangoDB connection
-    arango_host = os.environ.get('ARANGO_HOST', 'http://192.168.1.69:8529')
+    arango_host = os.environ.get('ARANGO_HOST')
     username = os.environ.get('ARANGO_USERNAME', 'root')
-    password = os.environ.get('ARANGO_PASSWORD', '')
+    password = os.environ.get('ARANGO_PASSWORD')
+    
+    # Validate required environment variables
+    if not arango_host:
+        raise ValueError("ARANGO_HOST environment variable must be set")
+    if not password:
+        raise ValueError("ARANGO_PASSWORD environment variable must be set")
+    
+    # Note: Password should be retrieved from a secure secret management service
+    # in production environments
     
     logger.info("=" * 60)
     logger.info("STEP 2: LOAD CHUNKS TO ARANGODB")
@@ -43,7 +52,14 @@ def main():
     chunks_coll = db.collection('chunks_exp2')
     hierarchy_coll = db.collection('chunk_hierarchy_exp2')
     
-    # Clear existing data
+    # Clear existing data with confirmation
+    logger.info("Existing data will be cleared.")
+    if os.environ.get('SKIP_TRUNCATE_CONFIRM', 'false').lower() != 'true':
+        response = input("Are you sure you want to truncate existing collections? (y/n): ")
+        if response.lower() != 'y':
+            logger.info("Truncation cancelled.")
+            return
+    
     logger.info("Clearing existing data...")
     papers_coll.truncate()
     chunks_coll.truncate()
@@ -64,8 +80,9 @@ def main():
             paper_id = data['paper_id']
             
             # Create paper document
+            import re
             paper_doc = {
-                '_key': paper_id.replace('.', '_').replace('/', '_'),
+                '_key': re.sub(r'[^a-zA-Z0-9_-]', '_', paper_id),
                 'arxiv_id': paper_id,
                 'title': data.get('title', ''),
                 'num_chunks': data['num_chunks'],
@@ -78,8 +95,10 @@ def main():
             
             # Insert chunks
             for chunk in data['chunks']:
-                # Ensure _key is valid
-                chunk['_key'] = chunk['_key'].replace('.', '_').replace('/', '_')
+                # Ensure _key is valid for ArangoDB
+                import re
+                # Remove or replace all invalid characters for ArangoDB keys
+                chunk['_key'] = re.sub(r'[^a-zA-Z0-9_-]', '_', chunk['_key'])
                 
                 # Insert chunk
                 chunk_result = chunks_coll.insert(chunk)
@@ -97,8 +116,12 @@ def main():
             if papers_loaded % 10 == 0:
                 logger.info(f"Progress: {papers_loaded} papers, {chunks_loaded} chunks loaded")
                 
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error loading {chunk_file.name}: {e}")
+        except IOError as e:
+            logger.error(f"IO error loading {chunk_file.name}: {e}")
         except Exception as e:
-            logger.error(f"Error loading {chunk_file.name}: {e}")
+            logger.error(f"Database error loading {chunk_file.name}: {e}")
     
     # Verify results
     logger.info("\nVerifying loaded data:")

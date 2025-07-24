@@ -34,7 +34,9 @@ def run_experiment2_pipeline(num_papers=2000):
     
     # Create output directory with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = f"/home/todd/reconstructionism/validation/experiment_2/results/exp2_run_{num_papers}_{timestamp}"
+    base_results_dir = os.environ.get('EXP2_BASE_RESULTS_DIR', 
+                                      os.path.join(os.path.dirname(__file__), '..', 'results'))
+    results_dir = os.path.join(base_results_dir, f"exp2_run_{num_papers}_{timestamp}")
     os.makedirs(results_dir, exist_ok=True)
     
     # Set up logging
@@ -216,11 +218,28 @@ def create_analysis_scripts(results_dir, logger):
     with open(multiscale_script, 'w') as f:
         f.write("""#!/usr/bin/env python3
 import sys
-sys.path.append('/home/todd/reconstructionism/validation/experiment_2/analysis')
-from multiscale_context_analysis import run_analysis
+import os
+
+# Calculate path relative to script location
+script_dir = os.path.dirname(os.path.abspath(__file__))
+analysis_dir = os.path.abspath(os.path.join(script_dir, '..', '..', '..', 'analysis'))
+sys.path.append(analysis_dir)
+
+try:
+    from multiscale_context_analysis import run_analysis
+except ImportError as e:
+    print(f"Error importing multiscale_context_analysis: {e}")
+    print(f"Attempted to import from: {analysis_dir}")
+    sys.exit(1)
 
 if __name__ == "__main__":
-    run_analysis()
+    try:
+        run_analysis()
+    except Exception as e:
+        print(f"Error during analysis execution: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 """)
     os.chmod(multiscale_script, 0o755)
     

@@ -25,10 +25,10 @@ def main():
     """Run late chunking extraction for experiment 2"""
     
     # Configuration
-    papers_dir = "/home/todd/olympus/Erebus/unstructured/papers"
+    papers_dir = os.environ.get("PAPERS_DIR", "/home/todd/olympus/Erebus/unstructured/papers")
     num_papers = int(os.environ.get("EXP2_NUM_PAPERS", "2000"))
     results_dir = os.environ.get("EXP2_RESULTS_DIR", 
-                                "/home/todd/reconstructionism/validation/experiment_2/results/current")
+                                os.path.join(os.path.dirname(__file__), "..", "results", "current"))
     
     # Create output directory
     output_dir = os.path.join(results_dir, "chunks")
@@ -51,7 +51,8 @@ def main():
                 paper = json.load(f)
             if 'pdf_content' in paper and paper['pdf_content'].get('markdown'):
                 json_files.append(str(json_path))
-        except:
+        except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"Error reading {json_path}: {e}")
             continue
     
     logger.info(f"Found {len(json_files)} papers with PDF content")
@@ -85,8 +86,9 @@ def main():
         env['LIMIT'] = str(num_papers)
         
         # Run the simplified single-GPU script
+        script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'generate_late_chunked_embeddings_simple.py'))
         result = subprocess.run(
-            [sys.executable, 'generate_late_chunked_embeddings_simple.py'],
+            [sys.executable, script_path],
             env=env,
             capture_output=True,
             text=True
@@ -112,12 +114,16 @@ def main():
             sample_stats = []
             
             for chunk_file in chunk_files[:10]:  # Sample first 10
-                with open(chunk_file, 'r') as f:
-                    data = json.load(f)
-                
-                num_chunks = len(data.get('chunks', []))
-                total_chunks += num_chunks
-                sample_stats.append(num_chunks)
+                try:
+                    with open(chunk_file, 'r') as f:
+                        data = json.load(f)
+                    
+                    num_chunks = len(data.get('chunks', []))
+                    total_chunks += num_chunks
+                    sample_stats.append(num_chunks)
+                except (json.JSONDecodeError, IOError) as e:
+                    logger.warning(f"Error reading chunk file {chunk_file}: {e}")
+                    continue
             
             if sample_stats:
                 avg_chunks = sum(sample_stats) / len(sample_stats)

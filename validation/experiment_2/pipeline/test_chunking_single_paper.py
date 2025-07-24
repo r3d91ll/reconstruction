@@ -12,7 +12,7 @@ print("SINGLE PAPER CHUNKING TEST")
 print("=" * 60)
 
 # Configuration
-papers_dir = "/home/todd/olympus/Erebus/unstructured/papers"
+papers_dir = os.environ.get('PAPERS_DIR', os.path.join(os.path.dirname(__file__), '..', '..', '..', 'data', 'papers'))
 
 # Find a paper with PDF content
 test_paper_path = None
@@ -23,7 +23,8 @@ for json_path in Path(papers_dir).glob("*.json"):
         if 'pdf_content' in paper and paper['pdf_content'].get('markdown'):
             test_paper_path = json_path
             break
-    except:
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error reading {json_path}: {e}")
         continue
 
 if not test_paper_path:
@@ -46,15 +47,28 @@ print(f"Full text length: {len(full_text)} characters")
 
 # Load model
 print("\nLoading Jina V4 model...")
-model = AutoModel.from_pretrained(
-    'jinaai/jina-embeddings-v4',
-    trust_remote_code=True
-)
-
-device = torch.device('cuda:0')
-model = model.to(device)
-model.eval()
-print(f"Model loaded on {device}")
+try:
+    model = AutoModel.from_pretrained(
+        'jinaai/jina-embeddings-v4',
+        trust_remote_code=True
+    )
+    
+    # Check CUDA availability
+    if torch.cuda.is_available():
+        device = torch.device('cuda:0')
+        print(f"CUDA available, using {device}")
+    else:
+        device = torch.device('cpu')
+        print("CUDA not available, using CPU")
+    
+    model = model.to(device)
+    model.eval()
+    print(f"Model loaded on {device}")
+except Exception as e:
+    print(f"Error loading model: {e}")
+    import traceback
+    traceback.print_exc()
+    exit(1)
 
 # Test chunking
 print("\nTesting chunking...")

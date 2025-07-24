@@ -5,17 +5,24 @@ Creates a separate database to preserve experiment_1 results
 """
 
 import os
+import sys
 from arango import ArangoClient
 from datetime import datetime
 
 def setup_experiment2_database():
     """Create and configure database for experiment 2"""
     
-    # Configuration
-    db_name = "information_reconstructionism_exp2"
-    arango_host = os.environ.get('ARANGO_HOST', 'http://192.168.1.69:8529')
+    # Configuration - use environment variable if set
+    db_name = os.environ.get("EXP2_DB_NAME", "information_reconstructionism_exp2")
+    arango_host = os.environ.get('ARANGO_HOST')
     username = os.environ.get('ARANGO_USERNAME', 'root')
-    password = os.environ.get('ARANGO_PASSWORD', '')
+    password = os.environ.get('ARANGO_PASSWORD')
+    
+    # Validate required environment variables
+    if not arango_host:
+        raise ValueError("ARANGO_HOST environment variable must be set")
+    if not password:
+        raise ValueError("ARANGO_PASSWORD environment variable must be set")
     
     print("=" * 60)
     print("EXPERIMENT 2 DATABASE SETUP")
@@ -24,26 +31,46 @@ def setup_experiment2_database():
     print(f"Timestamp: {datetime.now()}")
     
     # Connect to ArangoDB
-    client = ArangoClient(hosts=arango_host)
-    sys_db = client.db('_system', username=username, password=password)
+    try:
+        client = ArangoClient(hosts=arango_host)
+        sys_db = client.db('_system', username=username, password=password)
+    except Exception as e:
+        print(f"Failed to connect to ArangoDB at {arango_host}: {e}")
+        raise
     
     # Check if database exists
-    if sys_db.has_database(db_name):
-        print(f"\n⚠️  Database '{db_name}' already exists!")
-        response = input("Delete and recreate? (y/n): ")
-        if response.lower() == 'y':
-            sys_db.delete_database(db_name)
-            print(f"Deleted existing database: {db_name}")
-        else:
-            print("Keeping existing database")
-            return
+    try:
+        if sys_db.has_database(db_name):
+            print(f"\n⚠️  Database '{db_name}' already exists!")
+            # Check if running in non-interactive mode
+            if not sys.stdin.isatty() or os.environ.get('NON_INTERACTIVE', 'false').lower() == 'true':
+                print("Running in non-interactive mode - keeping existing database")
+                return
+            response = input("Delete and recreate? (y/n): ")
+            if response.lower() == 'y':
+                sys_db.delete_database(db_name)
+                print(f"Deleted existing database: {db_name}")
+            else:
+                print("Keeping existing database")
+                return
+    except Exception as e:
+        print(f"Error checking database existence: {e}")
+        raise
     
     # Create database
-    sys_db.create_database(db_name)
-    print(f"✓ Created database: {db_name}")
+    try:
+        sys_db.create_database(db_name)
+        print(f"✓ Created database: {db_name}")
+    except Exception as e:
+        print(f"Failed to create database: {e}")
+        raise
     
     # Connect to new database
-    db = client.db(db_name, username=username, password=password)
+    try:
+        db = client.db(db_name, username=username, password=password)
+    except Exception as e:
+        print(f"Failed to connect to new database: {e}")
+        raise
     
     # Create collections
     collections = {
@@ -137,7 +164,7 @@ def setup_experiment2_database():
     print(f"  Host: {arango_host}")
     
     # Save configuration
-    config_file = "/home/todd/reconstructionism/validation/experiment_2/database_config.json"
+    config_file = os.path.join(os.path.dirname(__file__), '..', 'database_config.json')
     import json
     config = {
         'database': db_name,

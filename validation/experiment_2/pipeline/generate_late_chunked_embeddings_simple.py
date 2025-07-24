@@ -54,7 +54,8 @@ def main():
                 papers_to_process.append(str(json_path))
             if len(papers_to_process) >= num_papers:
                 break
-        except:
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Error reading {json_path}: {e}")
             continue
     
     print(f"\nProcessing {len(papers_to_process)} papers...")
@@ -75,7 +76,7 @@ def main():
             full_text = f"Title: {title}\n\nAbstract: {abstract}\n\n{markdown}"
             
             # Truncate if too long
-            max_chars = 512000
+            max_chars = int(os.environ.get('MAX_TEXT_CHARS', '512000'))
             if len(full_text) > max_chars:
                 full_text = full_text[:max_chars]
             
@@ -111,7 +112,7 @@ def main():
                     '_key': f"{paper_id.replace('.', '_')}_chunk_{len(chunks_data)}",
                     'paper_id': paper_id,
                     'chunk_index': len(chunks_data),
-                    'text': chunk_text[:1000] + "..." if len(chunk_text) > 1000 else chunk_text,
+                    'text': chunk_text[:int(os.environ.get('CHUNK_TEXT_PREVIEW_LENGTH', '1000'))] + "..." if len(chunk_text) > int(os.environ.get('CHUNK_TEXT_PREVIEW_LENGTH', '1000')) else chunk_text,
                     'embedding': embedding_list,
                     'metadata': {
                         'start_index': start,
@@ -138,8 +139,18 @@ def main():
             with open(output_path, 'w') as f:
                 json.dump(result, f)
                 
-        except Exception as e:
-            print(f"\nError processing {Path(json_path).name}: {e}")
+        except json.JSONDecodeError as e:
+            print(f"\nJSON decode error processing {Path(json_path).name}: {e}")
+            continue
+        except IOError as e:
+            print(f"\nIO error processing {Path(json_path).name}: {e}")
+            continue
+        except torch.cuda.OutOfMemoryError as e:
+            print(f"\nCUDA out of memory error processing {Path(json_path).name}: {e}")
+            torch.cuda.empty_cache()
+            continue
+        except RuntimeError as e:
+            print(f"\nRuntime error processing {Path(json_path).name}: {e}")
             continue
     
     # Summary

@@ -11,7 +11,6 @@ from arango import ArangoClient
 from datetime import datetime
 import logging
 from tqdm import tqdm
-import torch
 
 # Set up logging
 logging.basicConfig(
@@ -42,9 +41,15 @@ def main():
     similarity_threshold = float(os.environ.get("EXP2_SIM_THRESHOLD", "0.5"))
     
     # ArangoDB connection
-    arango_host = os.environ.get('ARANGO_HOST', 'http://192.168.1.69:8529')
+    arango_host = os.environ.get('ARANGO_HOST')
     username = os.environ.get('ARANGO_USERNAME', 'root')
-    password = os.environ.get('ARANGO_PASSWORD', '')
+    password = os.environ.get('ARANGO_PASSWORD')
+    
+    # Validate required environment variables
+    if not arango_host:
+        raise ValueError("ARANGO_HOST environment variable must be set")
+    if not password:
+        raise ValueError("ARANGO_PASSWORD environment variable must be set")
     
     logger.info("=" * 60)
     logger.info("STEP 3: COMPUTE CHUNK SIMILARITIES")
@@ -70,67 +75,78 @@ def main():
     logger.info(f"Total chunks to process: {total_chunks}")
     
     # Process chunks in batches
-    logger.info("\nFetching all chunks...")
-    all_chunks = []
+    logger.info("\nProcessing chunks with memory-efficient batching...")
     
-    # Use cursor to fetch all chunks
-    cursor = chunks_coll.all()
-    for chunk in cursor:
-        all_chunks.append(chunk)
+    # Get chunk count for progress tracking
+    chunk_count = chunks_coll.count()
     
-    logger.info(f"Loaded {len(all_chunks)} chunks")
+    # Use batch processing to avoid loading all chunks into memory at once
+    chunk_batch_size = int(os.environ.get("EXP2_CHUNK_BATCH_SIZE", "100"))
+    logger.info(f"Processing chunks in batches of {chunk_batch_size}")
     
-    # Compute similarities
+    # Compute similarities using memory-efficient batch processing
     logger.info("\nComputing chunk similarities...")
     similarities_computed = 0
     similarities_above_threshold = 0
     
-    # Progress tracking
-    total_comparisons = (len(all_chunks) * (len(all_chunks) - 1)) // 2
-    
-    with tqdm(total=total_comparisons, desc="Computing similarities") as pbar:
-        for i in range(len(all_chunks)):
-            chunk1 = all_chunks[i]
+    # Process chunks in sliding window batches
+    for offset_i in range(0, chunk_count, chunk_batch_size):
+        # Fetch batch i
+        query_i = f"FOR c IN chunks_exp2 LIMIT {offset_i}, {chunk_batch_size} RETURN c"
+        batch_i = list(db.aql.execute(query_i))
+        
+        if not batch_i:
+            break
             
-            # Batch similarities for this chunk
+        logger.info(f"Processing batch starting at offset {offset_i}...")
+        
+        # Compare with all subsequent chunks
+        for offset_j in range(offset_i, chunk_count, chunk_batch_size):
+            # Fetch batch j
+            query_j = f"FOR c IN chunks_exp2 LIMIT {offset_j}, {chunk_batch_size} RETURN c"
+            batch_j = list(db.aql.execute(query_j))
+            
+            if not batch_j:
+                break
+            
+            # Batch similarities for insertion
             batch_similarities = []
             
-            for j in range(i + 1, len(all_chunks)):
-                chunk2 = all_chunks[j]
-                
-                # Skip if same paper
-                if chunk1['paper_id'] == chunk2['paper_id']:
-                    pbar.update(1)
-                    continue
-                
-                # Compute similarity
-                similarity = cosine_similarity(chunk1['embedding'], chunk2['embedding'])
-                similarities_computed += 1
-                
-                if similarity >= similarity_threshold:
-                    similarities_above_threshold += 1
+            # Compare all pairs between batches
+            for i, chunk1 in enumerate(batch_i):
+                for j, chunk2 in enumerate(batch_j):
+                    # Skip if comparing same chunk or same paper
+                    if (offset_i + i >= offset_j + j) or (chunk1['paper_id'] == chunk2['paper_id']):
+                        continue
                     
-                    # Create similarity edge
-                    similarity_doc = {
-                        '_from': f"chunks_exp2/{chunk1['_key']}",
-                        '_to': f"chunks_exp2/{chunk2['_key']}",
-                        'similarity': similarity,
-                        'from_paper': chunk1['paper_id'],
-                        'to_paper': chunk2['paper_id'],
-                        'computed_at': datetime.now().isoformat()
-                    }
-                    batch_similarities.append(similarity_doc)
-                
-                pbar.update(1)
-                
-                # Insert batch when it reaches size limit
-                if len(batch_similarities) >= batch_size:
-                    similarities_coll.insert_many(batch_similarities)
-                    batch_similarities = []
+                    # Compute similarity
+                    similarity = cosine_similarity(chunk1['embedding'], chunk2['embedding'])
+                    similarities_computed += 1
+                    
+                    if similarity >= similarity_threshold:
+                        similarities_above_threshold += 1
+                        
+                        # Create similarity edge
+                        similarity_doc = {
+                            '_from': f"chunks_exp2/{chunk1['_key']}",
+                            '_to': f"chunks_exp2/{chunk2['_key']}",
+                            'similarity': similarity,
+                            'from_paper': chunk1['paper_id'],
+                            'to_paper': chunk2['paper_id'],
+                            'computed_at': datetime.now().isoformat()
+                        }
+                        batch_similarities.append(similarity_doc)
+                    
+                    # Insert batch when it reaches size limit
+                    if len(batch_similarities) >= batch_size:
+                        similarities_coll.insert_many(batch_similarities)
+                        batch_similarities = []
             
-            # Insert remaining similarities
+            # Insert remaining similarities from this batch pair
             if batch_similarities:
                 similarities_coll.insert_many(batch_similarities)
+        
+        logger.info(f"Processed batch at offset {offset_i}. Similarities computed: {similarities_computed}")
     
     # Verify results
     logger.info("\nVerifying computed similarities:")

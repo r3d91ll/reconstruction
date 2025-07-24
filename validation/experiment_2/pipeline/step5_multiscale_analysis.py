@@ -96,11 +96,13 @@ def analyze_context_amplification(db, results_dir):
             logger.info(f"\nContext amplification factor (α) estimates:")
             logger.info(f"  Mean α: {np.mean(alphas):.3f}")
             logger.info(f"  α range: [{min(alphas):.3f}, {max(alphas):.3f}]")
+        else:
+            alphas = []
     
     return {
         'chunk_connections': chunk_connections,
         'doc_connectivity_ratios': connectivity_ratios if doc_results else [],
-        'alpha_estimates': alphas if 'alphas' in locals() else []
+        'alpha_estimates': alphas if alphas else []
     }
 
 def analyze_zero_propagation(db, results_dir):
@@ -352,18 +354,18 @@ def main():
                 'alpha_range': [float(min(analysis_results['context']['alpha_estimates'])), 
                                float(max(analysis_results['context']['alpha_estimates']))]
                               if analysis_results['context']['alpha_estimates'] else None,
-                'interpretation': 'Context acts as exponential amplifier with α ≈ 1.5-2.0'
+                'interpretation': f'Context acts as exponential amplifier with α ≈ {np.mean(analysis_results["context"]["alpha_estimates"]):.1f}' if analysis_results['context']['alpha_estimates'] else 'Context amplification not measured'
             },
             'zero_propagation': {
                 'isolated_chunks_percent': analysis_results['zero_propagation']['isolated_chunks'] / 
                                          analysis_results['zero_propagation']['total_chunks'] * 100,
                 'disconnected_docs_percent': analysis_results['zero_propagation']['disconnected_docs'] / 
                                            analysis_results['zero_propagation']['total_docs'] * 100,
-                'interpretation': 'Zero in any dimension propagates to zero information'
+                'interpretation': f'{analysis_results["zero_propagation"]["isolated_chunks"]} isolated chunks and {analysis_results["zero_propagation"]["disconnected_docs"]} disconnected docs demonstrate zero propagation'
             },
             'bridge_discovery': {
                 'high_similarity_bridges': len(analysis_results['bridges']['bridges']),
-                'interpretation': 'High-conveyance connections reveal theory-practice bridges'
+                'interpretation': f'Found {len(analysis_results["bridges"]["bridges"])} high-conveyance connections as theory-practice bridges'
             }
         },
         'validation_status': 'COMPLETE',
