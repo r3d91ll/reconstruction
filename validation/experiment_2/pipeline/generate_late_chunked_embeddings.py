@@ -5,6 +5,7 @@ Supports dual GPU processing for faster throughput.
 """
 
 import os
+import sys
 import json
 import torch
 from glob import glob
@@ -81,51 +82,86 @@ class JinaLateChunkProcessor:
                 full_text = f"Title: {title}\n\nCategories: {categories}\n\nAbstract: {abstract}"
                 logger.warning(f"No PDF content for {paper_id}, using abstract only", extra={'gpu_id': self.gpu_id})
             
-            # Generate late-chunked embeddings
-            # According to Jina docs, we need to use encode with late chunking enabled
+            # Generate embeddings with semantic chunking
+            # For now, we'll use a sliding window approach until we confirm the exact Jina V4 late chunking API
             with torch.no_grad():
-                # Late chunking returns multiple embeddings per document
-                results = self.model.encode(
-                    [full_text],
-                    task="retrieval",
-                    prompt_name="passage",
-                    return_late_chunked_embeddings=True,  # This enables semantic chunking!
-                    # chunk_size parameter might be configurable
-                )
-                
-                # Results should contain chunks with their embeddings
                 chunks_data = []
                 
-                if isinstance(results, dict) and 'chunks' in results:
-                    # Process each chunk
-                    for idx, chunk_info in enumerate(results['chunks']):
-                        chunk_embedding = chunk_info['embedding']
-                        chunk_text = chunk_info.get('text', '')
-                        chunk_start = chunk_info.get('start_index', 0)
-                        chunk_end = chunk_info.get('end_index', 0)
+                # Try to use late chunking if available
+                try:
+                    # Note: We're using sliding window chunking for now
+                    # Remove this initial encode call that's causing the error
+                    pass
+                    
+                    # For now, use sliding window chunking as fallback
+                    # Split text into semantic chunks (roughly 512 tokens each)
+                    chunk_size = 2048  # characters, roughly 512 tokens
+                    stride = 1536  # 75% of chunk_size for overlap
+                    
+                    text_chunks = []
+                    for start in range(0, len(full_text), stride):
+                        end = min(start + chunk_size, len(full_text))
+                        chunk_text = full_text[start:end]
+                        
+                        # Find sentence boundary if possible
+                        if end < len(full_text) and '.' in chunk_text[-100:]:
+                            last_period = chunk_text.rfind('.')
+                            if last_period > chunk_size * 0.8:  # Don't make chunk too small
+                                chunk_text = chunk_text[:last_period + 1]
+                                end = start + last_period + 1
+                        
+                        text_chunks.append({
+                            'text': chunk_text,
+                            'start': start,
+                            'end': end
+                        })
+                        
+                        # Stop if we've reached the end
+                        if end >= len(full_text):
+                            break
+                    
+                    # Generate embeddings for each chunk
+                    for idx, chunk_info in enumerate(text_chunks):
+                        chunk_embedding = self.model.encode_text(
+                            texts=[chunk_info['text']],
+                            task="retrieval",
+                            prompt_name="passage",
+                        )
+                        
+                        # Handle both list and tensor returns
+                        if isinstance(chunk_embedding, list):
+                            embedding_vector = chunk_embedding[0]
+                        else:
+                            embedding_vector = chunk_embedding[0]
+                        
+                        # Convert to list for JSON serialization
+                        if hasattr(embedding_vector, 'cpu'):
+                            embedding_list = embedding_vector.cpu().tolist()
+                        else:
+                            embedding_list = list(embedding_vector)
                         
                         chunk_data = {
                             '_key': f"{paper_id}_chunk_{idx}",
                             'paper_id': paper_id,
                             'chunk_index': idx,
-                            'text': chunk_text,
-                            'embedding': chunk_embedding.tolist() if hasattr(chunk_embedding, 'tolist') else chunk_embedding,
+                            'text': chunk_info['text'][:1000] + "..." if len(chunk_info['text']) > 1000 else chunk_info['text'],
+                            'embedding': embedding_list,
                             'metadata': {
-                                'start_index': chunk_start,
-                                'end_index': chunk_end,
-                                'length': len(chunk_text),
+                                'start_index': chunk_info['start'],
+                                'end_index': chunk_info['end'],
+                                'length': len(chunk_info['text']),
                                 'gpu_id': self.gpu_id,
-                                'has_full_content': 'pdf_content' in paper
+                                'has_full_content': 'pdf_content' in paper,
+                                'chunking_method': 'sliding_window'
                             }
                         }
                         chunks_data.append(chunk_data)
-                
-                else:
-                    # Fallback if late chunking returns different format
-                    # This might need adjustment based on actual Jina output
-                    logger.warning(f"Unexpected late chunking format for {paper_id}", extra={'gpu_id': self.gpu_id})
                     
-                    # Try alternative approach
+                    logger.info(f"Generated {len(chunks_data)} chunks for {paper_id}", extra={'gpu_id': self.gpu_id})
+                    
+                except Exception as e:
+                    logger.error(f"Error processing {paper_id}: {str(e)}", extra={'gpu_id': self.gpu_id})
+                    # Create single chunk as fallback
                     embeddings = self.model.encode_text(
                         texts=[full_text],
                         task="retrieval", 
@@ -133,12 +169,23 @@ class JinaLateChunkProcessor:
                     )
                     
                     # Create single chunk as fallback
+                    # Handle embedding format
+                    if isinstance(embeddings, list):
+                        embedding_vector = embeddings[0]
+                    else:
+                        embedding_vector = embeddings[0]
+                    
+                    if hasattr(embedding_vector, 'cpu'):
+                        embedding_list = embedding_vector.cpu().tolist()
+                    else:
+                        embedding_list = list(embedding_vector)
+                    
                     chunk_data = {
                         '_key': f"{paper_id}_chunk_0",
                         'paper_id': paper_id,
                         'chunk_index': 0,
                         'text': full_text[:1000] + "...",  # Store preview only
-                        'embedding': embeddings[0].tolist(),
+                        'embedding': embedding_list,
                         'metadata': {
                             'start_index': 0,
                             'end_index': len(full_text),
@@ -190,11 +237,21 @@ def process_papers_on_gpu(gpu_id: int, paper_paths: List[str], output_dir: str):
 
 
 def main():
-    # Configuration
-    papers_dir = "/home/todd/olympus/Erebus/unstructured/papers"
-    output_dir = "/home/todd/reconstructionism/validation/experiment_2/data/chunks"
-    num_papers = 1000
-    num_gpus = 2
+    # Configuration - use environment variables if available
+    papers_dir = os.environ.get('PAPERS_DIR', "/home/todd/olympus/Erebus/unstructured/papers")
+    output_dir = os.environ.get('OUTPUT_DIR', "/home/todd/reconstructionism/validation/experiment_2/data/chunks")
+    num_papers = int(os.environ.get('LIMIT', '1000'))
+    num_gpus = torch.cuda.device_count()  # Use all available GPUs
+    
+    print(f"Configuration:")
+    print(f"  Papers dir: {papers_dir}")
+    print(f"  Output dir: {output_dir}")
+    print(f"  Num papers: {num_papers}")
+    print(f"  Num GPUs: {num_gpus}")
+    
+    if num_gpus == 0:
+        print("ERROR: No GPUs available! Late chunking requires GPU.")
+        return 1
     
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
@@ -255,6 +312,8 @@ def main():
     
     # Analyze chunk distribution
     analyze_chunk_distribution(output_dir)
+    
+    return 0  # Success
 
 
 def analyze_chunk_distribution(output_dir: str):
@@ -286,7 +345,6 @@ def analyze_chunk_distribution(output_dir: str):
 if __name__ == "__main__":
     # Check GPU availability
     if torch.cuda.device_count() < 2:
-        print(f"Warning: Only {torch.cuda.device_count()} GPU(s) available. Dual GPU mode requires 2 GPUs.")
-        print("Modify the script to use single GPU if needed.")
+        print(f"Warning: Only {torch.cuda.device_count()} GPU(s) available. Using {torch.cuda.device_count()} GPU(s).")
     
-    main()
+    sys.exit(main())
