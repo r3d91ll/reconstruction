@@ -25,16 +25,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class GPUBatchProcessor:
-    def __init__(self, device_id=0, batch_size=1000):
+    def __init__(self, device_id=0):
         """
         Initialize GPU batch processor for embeddings
         
         Args:
             device_id: GPU to use
-            batch_size: Batch size for processing
         """
         self.device = torch.device(f'cuda:{device_id}')
-        self.batch_size = batch_size
         
         logger.info(f"GPU Batch Processor initialized on GPU {device_id}")
     
@@ -158,7 +156,7 @@ def batch_insert_documents(db, collection_name, documents, batch_size=1000):
                 except Exception as e2:
                     logger.error(f"Error inserting document {doc.get('_key', 'unknown')}: {e2}")
 
-def main():
+def main(max_workers=None):
     # Configuration
     results_dir = os.environ.get("EXP2_RESULTS_DIR", ".")
     embeddings_dir = os.path.join(results_dir, "embeddings")
@@ -182,7 +180,7 @@ def main():
     logger.info(f"Batch size: {batch_size}")
     
     # Initialize GPU processor
-    gpu_processor = GPUBatchProcessor(device_id=gpu_id, batch_size=batch_size)
+    gpu_processor = GPUBatchProcessor(device_id=gpu_id)
     
     # Connect to database
     client = ArangoClient(hosts=arango_host)
@@ -209,7 +207,9 @@ def main():
     start_time = datetime.now()
     
     # Process files in parallel with GPU acceleration
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    # Use provided max_workers or default to 8 for better I/O parallelism
+    workers = max_workers if max_workers is not None else 8
+    with ThreadPoolExecutor(max_workers=workers) as executor:
         # Process files
         futures = []
         for file_path in tqdm(embedding_files, desc="Processing embeddings"):
@@ -227,7 +227,9 @@ def main():
                 # Clear futures
                 futures = []
                 
-                # Clear GPU cache
+                # Clear GPU cache and run garbage collection
+                import gc
+                gc.collect()
                 torch.cuda.empty_cache()
         
         # Process remaining futures

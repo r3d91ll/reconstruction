@@ -80,7 +80,7 @@ class GPUEmbeddingGenerator:
                 self.embedding_dim = 768
                 logger.warning(f"Could not determine embedding dimension, defaulting to {self.embedding_dim}")
     
-    def generate_embeddings(self, texts, batch_size=32, show_progress=True):
+    def generate_embeddings(self, texts, batch_size=32, show_progress=True, max_length=None):
         """
         Generate embeddings for a list of texts
         
@@ -88,6 +88,7 @@ class GPUEmbeddingGenerator:
             texts: List of text strings
             batch_size: Batch size for processing
             show_progress: Show progress bar
+            max_length: Maximum sequence length for tokenization (default: 512)
             
         Returns:
             numpy array of embeddings
@@ -102,11 +103,13 @@ class GPUEmbeddingGenerator:
                 batch_texts = texts[i:i + batch_size]
                 
                 # Tokenize with padding and truncation
+                # Use provided max_length or default to 512 for Jina models
+                tokenizer_max_length = max_length if max_length is not None else 512
                 inputs = self.tokenizer(
                     batch_texts,
                     padding=True,
                     truncation=True,
-                    max_length=512,  # Jina v2 max length
+                    max_length=tokenizer_max_length,
                     return_tensors='pt'
                 )
                 

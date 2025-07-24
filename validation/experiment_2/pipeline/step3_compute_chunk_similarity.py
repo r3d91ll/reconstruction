@@ -112,7 +112,8 @@ def main():
             # Compare all pairs between batches
             for i, chunk1 in enumerate(batch_i):
                 for j, chunk2 in enumerate(batch_j):
-                    # Skip if comparing same chunk or same paper
+                    # Skip comparisons where the first chunk's position is not before the second chunk's position
+                    # or when both chunks belong to the same paper (avoiding self-comparisons and duplicates)
                     if (offset_i + i >= offset_j + j) or (chunk1['paper_id'] == chunk2['paper_id']):
                         continue
                     

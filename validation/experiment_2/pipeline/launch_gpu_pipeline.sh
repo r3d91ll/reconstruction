@@ -23,7 +23,11 @@ fi
 
 # Display GPU info
 echo "🚀 GPU Configuration:"
-nvidia-smi --query-gpu=index,name,memory.total --format=csv
+if ! nvidia-smi --query-gpu=index,name,memory.total --format=csv; then
+    echo "ERROR: Failed to query GPU information with nvidia-smi"
+    echo "GPU drivers may not be properly configured."
+    exit 1
+fi
 
 # Number of papers to process (default: 2000)
 NUM_PAPERS=${1:-2000}

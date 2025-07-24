@@ -4,7 +4,8 @@
 echo "Testing experiment_2 pipeline with existing chunks..."
 
 # Check if chunks directory exists
-CHUNKS_DIR="../results/exp2_run_5_20250724_013320/chunks/"
+# Allow chunks directory to be configured via environment variable with fallback to default
+CHUNKS_DIR="${CHUNKS_DIR:-../results/exp2_run_5_20250724_013320/chunks/}"
 if [ ! -d "$CHUNKS_DIR" ]; then
     echo "Error: Chunks directory does not exist at $CHUNKS_DIR"
     echo "Please ensure the chunks directory exists before running this script."

@@ -275,9 +275,6 @@ def main():
     start_time = datetime.now()
     all_results = []
     
-    # Important: Save the parent process CUDA_VISIBLE_DEVICES
-    parent_cuda_devices = os.environ.get('CUDA_VISIBLE_DEVICES', '0,1')
-    
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
         # Submit batch processing tasks
         futures = []

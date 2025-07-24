@@ -7,6 +7,7 @@ import torch
 import numpy as np
 import time
 import sys
+import os
 
 def test_gpu_similarity():
     # Check GPU availability
@@ -87,7 +88,9 @@ def test_gpu_similarity():
         total_memory = (max_n * memory_per_embedding * 2 + similarity_matrix_memory) / 1024**3
         print(f"  Memory used for {max_n} embeddings: {total_memory:.2f} GB")
         
-        available_memory = 48 * 0.7  # 70% of 48GB
+        # Get GPU memory utilization from environment variable with default fallback
+        gpu_memory_utilization = float(os.environ.get('GPU_MEMORY_UTILIZATION', '0.7'))
+        available_memory = 48 * gpu_memory_utilization  # Percentage of 48GB
         max_batch_estimate = int(np.sqrt(available_memory * 1024**3 / (embedding_dim * 4 + 2)))
         print(f"  Estimated max batch size for 48GB GPU: ~{max_batch_estimate}")
         
