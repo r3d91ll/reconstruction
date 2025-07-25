@@ -32,6 +32,14 @@ citation_graph = {
 
 ### Step 2: Analyze Chunk Propagation
 ```python
+def compute_semantic_similarity(chunk1, chunk2):
+    """Compute semantic similarity between two chunks."""
+    # This is a placeholder for actual implementation
+    # In practice, this would use embeddings and cosine similarity
+    # For now, returning a simple text-based similarity
+    import difflib
+    return difflib.SequenceMatcher(None, chunk1, chunk2).ratio()
+
 def find_semantic_matches(source_chunks, target_chunks, threshold=0.7):
     """Find semantically similar chunks between source and target."""
     matches = []

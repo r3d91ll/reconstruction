@@ -64,7 +64,8 @@ class GPUMultiscaleAnalyzer:
         
         for alpha in alphas:
             # Compute predicted similarities: sim * context^α
-            predicted = sims[0] * torch.pow(ctxs, alpha)
+            # Use element-wise multiplication for each similarity
+            predicted = sims * torch.pow(ctxs, alpha)
             
             # Compute MSE
             error = F.mse_loss(predicted, sims)
@@ -74,7 +75,7 @@ class GPUMultiscaleAnalyzer:
                 best_alpha = alpha.item()
         
         # Compute R² for best α
-        predicted_best = sims[0] * torch.pow(ctxs, best_alpha)
+        predicted_best = sims * torch.pow(ctxs, best_alpha)
         ss_tot = torch.sum((sims - sims.mean()) ** 2)
         ss_res = torch.sum((sims - predicted_best) ** 2)
         r_squared = 1 - (ss_res / ss_tot)
@@ -348,9 +349,11 @@ def main():
                    [s for s, _ in same_paper_sims[:1000]], 
                    alpha=0.5, label='Actual')
         
-        # Plot fitted curve
+        # Plot fitted curve using the correct model
         contexts = np.linspace(0.1, 1.0, 100)
-        predicted = same_paper_sims[0][0] * (contexts ** context_result['alpha'])
+        # Use mean similarity as base for visualization
+        mean_sim = np.mean(same_paper_sims[0])
+        predicted = mean_sim * (contexts ** context_result['alpha'])
         plt.plot(contexts, predicted, 'r-', label=f'Context^{context_result["alpha"]:.2f}')
         
         plt.xlabel('Context Score')

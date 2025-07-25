@@ -109,8 +109,9 @@ class GPUAcceleratedExtractor:
             
             # If section is too large, split it
             if section_size > target_chunk_size:
-                # Split by sentences
-                sentences = section.split('. ')
+                # Split by sentences using regex for better handling
+                import re
+                sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', section)
                 for sentence in sentences:
                     if current_size + len(sentence) > target_chunk_size and current_chunk:
                         # Save current chunk
@@ -123,12 +124,12 @@ class GPUAcceleratedExtractor:
                             'end_char': end_pos,
                             'chunk_id': len(chunks)
                         })
-                        current_position = end_pos
-                        
                         # Start new chunk with overlap
                         overlap_text = ' '.join(current_chunk[-2:]) if len(current_chunk) > 2 else current_chunk[-1] if current_chunk else ''
+                        overlap_len = len(overlap_text) if overlap_text else 0
+                        current_position = end_pos - overlap_len  # Adjust position to account for overlap
                         current_chunk = [overlap_text, sentence] if overlap_text else [sentence]
-                        current_size = len(overlap_text) + len(sentence)
+                        current_size = overlap_len + len(sentence)
                     else:
                         current_chunk.append(sentence)
                         current_size += len(sentence)
@@ -238,7 +239,7 @@ def main():
     logger.info(f"Using {num_workers} GPUs: {gpu_ids}")
     
     # Find PDF files
-    pdf_dir = Path("/home/todd/olympus/Erebus/unstructured/papers/")
+    pdf_dir = Path(os.environ.get('PDF_DIR', "/home/todd/olympus/Erebus/unstructured/papers/"))
     if not pdf_dir.exists():
         # Try alternative paths
         alt_paths = [

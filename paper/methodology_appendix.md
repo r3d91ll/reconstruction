@@ -190,6 +190,8 @@ def train_implementation_predictor(historical_data):
     multiplicative_model = LogisticRegression()
     
     # Compare performance using cross-validation
+    from sklearn.model_selection import cross_val_score
+    
     return {
         'additive_auc': cross_val_score(additive_model, X_additive, labels, cv=5, scoring='roc_auc'),
         'multiplicative_auc': cross_val_score(multiplicative_model, X_multiplicative, labels, cv=5, scoring='roc_auc'),
@@ -294,10 +296,58 @@ class ImplementationPathAnalyzer:
     
     def _calculate_similarity(self, content1: str, content2: str) -> float:
         """Calculate semantic similarity between content elements"""
-        # Simplified similarity - in practice use embeddings
-        common_terms = len(set(content1.split()) & set(content2.split()))
-        total_terms = len(set(content1.split()) | set(content2.split()))
-        return common_terms / total_terms if total_terms > 0 else 0
+        # Option 1: Use Jina embeddings for semantic similarity (preferred)
+        try:
+            from transformers import AutoModel, AutoTokenizer
+            import torch
+            
+            # Load Jina model (cache this in __init__ for production)
+            model = AutoModel.from_pretrained('jinaai/jina-embeddings-v2-base-en')
+            tokenizer = AutoTokenizer.from_pretrained('jinaai/jina-embeddings-v2-base-en')
+            
+            # Generate embeddings
+            with torch.no_grad():
+                inputs1 = tokenizer(content1, return_tensors='pt', truncation=True, max_length=512)
+                inputs2 = tokenizer(content2, return_tensors='pt', truncation=True, max_length=512)
+                
+                emb1 = model(**inputs1).pooler_output
+                emb2 = model(**inputs2).pooler_output
+                
+                # Cosine similarity
+                cos_sim = torch.nn.functional.cosine_similarity(emb1, emb2)
+                return cos_sim.item()
+                
+        except ImportError:
+            # Option 2: Fallback to improved bag-of-words with preprocessing
+            import re
+            from collections import Counter
+            
+            # Common English stop words
+            stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+                         'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be',
+                         'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+                         'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this',
+                         'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they'}
+            
+            def preprocess(text):
+                # Convert to lowercase and extract words
+                words = re.findall(r'\b\w+\b', text.lower())
+                # Remove stop words and short words
+                return [w for w in words if w not in stop_words and len(w) > 2]
+            
+            # Preprocess both texts
+            words1 = preprocess(content1)
+            words2 = preprocess(content2)
+            
+            if not words1 or not words2:
+                return 0.0
+            
+            # Calculate Jaccard similarity on preprocessed words
+            set1, set2 = set(words1), set(words2)
+            intersection = len(set1 & set2)
+            union = len(set1 | set2)
+            
+            return intersection / union if union > 0 else 0.0
     
     def generate_implementation_paths(self, papers: List[Dict], implementations: List[Dict]) -> List[Dict]:
         """Generate and analyze paths from theory to implementation"""
@@ -348,7 +398,8 @@ class ImplementationPathAnalyzer:
             'completeness': len(set(n['type'] for n in nodes_data)) / len(self.node_types),
             
             # Path coherence: average edge weight (transition probability * similarity)
-            'coherence': np.mean([self.graph.edges[e]['weight'] for e in edges]),
+            'coherence': (np.mean([self.graph.edges[e]['weight'] for e in edges])
+                          if edges else 0.0),
             
             # Context richness: amount of content in path nodes
             'context_richness': sum(len(n.get('content', '')) for n in nodes_data),

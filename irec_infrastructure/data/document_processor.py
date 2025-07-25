@@ -96,7 +96,7 @@ class DocumentProcessor:
         output_path.mkdir(parents=True, exist_ok=True)
         
         # Load documents
-        if input_path.name == "arxiv_data":
+        if "arxiv_data" in input_path.parts:
             # Use ArxivLoader for arXiv dataset
             loader = ArxivLoader(input_path.parent)
             papers = loader.load_papers(
@@ -158,8 +158,7 @@ class DocumentProcessor:
         if self.jina_client:
             embeddings = self.jina_client.encode_batch(chunk_texts)
         else:
-            # Placeholder
-            embeddings = [[0.0] * 768 for _ in chunk_texts]
+            raise ValueError("No Jina client configured - embeddings cannot be generated")
         
         return ProcessingResult(
             document_id=pdf_path.stem,

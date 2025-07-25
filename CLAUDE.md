@@ -1,4 +1,8 @@
-# CLAUDE.md - Information Reconstructionism
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
 
 This repository contains the theoretical framework and mathematical validation for Information Reconstructionism - a new theory of observer-dependent information existence.
 
@@ -149,3 +153,147 @@ This repository focuses ONLY on proving the theoretical framework. Implementatio
 4. Scope creep
 
 The theory stands on its own mathematical and empirical merits.
+
+## Common Development Tasks
+
+### Setting Up the Environment
+
+```bash
+# Create and activate virtual environment
+./setup_venv.sh
+source venv/bin/activate
+```
+
+### Installing Dependencies
+
+```bash
+# Core infrastructure dependencies
+pip install -r infrastructure_setup/requirements.txt
+
+# Install irec_infrastructure package in development mode
+pip install -e .
+
+# For development with testing/linting
+pip install -e ".[dev]"
+```
+
+### Running Tests
+
+```bash
+# Run all tests with pytest
+pytest
+
+# Run tests with coverage
+pytest --cov=irec_infrastructure
+
+# Test infrastructure components
+python test_infrastructure.py
+```
+
+### Code Quality Checks
+
+```bash
+# Format code with black
+black irec_infrastructure/ validation/
+
+# Type checking with mypy
+mypy irec_infrastructure/
+```
+
+### Running Experiments
+
+```bash
+# Experiment 1: Multiplicative Model Validation
+cd validation/experiment_1
+python run_experiment.py
+
+# Experiment 2: GPU-accelerated processing
+cd validation/experiment_2
+./pipeline/launch_gpu_pipeline.sh
+```
+
+### Processing Documents
+
+```bash
+# Process arXiv documents with GPU acceleration
+python infrastructure_setup/process_documents_local_gpu_with_metadata.py \
+    --input-dir /mnt/data/arxiv_data/pdf \
+    --output-dir ./processed_documents_local \
+    --num-docs 1960
+
+# Process final 1960 documents
+python infrastructure_setup/process_final_1960_documents.py
+```
+
+## High-Level Architecture
+
+### Core Infrastructure (`irec_infrastructure/`)
+
+The infrastructure is designed as a reusable package that provides:
+
+1. **Data Processing Pipeline**
+   - `data/arxiv_loader.py`: Loads arXiv papers from local directories
+   - `data/document_processor.py`: Orchestrates document processing workflow
+   - Handles PDF extraction, text processing, and metadata management
+
+2. **Embedding Generation**
+   - `embeddings/local_jina_gpu.py`: GPU-accelerated local Jina embeddings
+   - `embeddings/true_late_chunking.py`: Implements TRUE late chunking strategy
+   - `embeddings/batch_processor.py`: Efficient batch processing utilities
+   - Produces 2048-dimensional embeddings for documents and chunks
+
+3. **Database Layer**
+   - `database/arango_client.py`: ArangoDB interface for graph storage
+   - `database/experiment_base.py`: Base class for all experiments
+   - Stores documents, chunks, embeddings, and similarity graphs
+
+4. **GPU Pipeline**
+   - `gpu/pipeline.py`: Complete GPU-accelerated processing pipeline
+   - Handles memory management and batch optimization
+
+### Validation Framework (`validation/`)
+
+Experiments are structured to test specific hypotheses:
+
+- **Experiment 1**: Tests multiplicative model and zero propagation
+- **Experiment 2**: Large-scale GPU processing and multi-scale analysis
+- Each experiment inherits from `ExperimentBase` for consistent infrastructure access
+
+### Key Design Principles
+
+1. **Pre-computed Infrastructure**: All heavy computation (embeddings, similarities) is done once and stored
+2. **Experiment Isolation**: Each experiment focuses purely on hypothesis testing
+3. **GPU Optimization**: Batched processing with memory management for large-scale data
+4. **Graph-Based Storage**: ArangoDB enables efficient similarity queries and graph traversal
+
+## Database Schema
+
+- `papers`: Document metadata and full text
+- `paper_embeddings`: Document-level embeddings (2048D)
+- `chunks`: Semantic text chunks with metadata  
+- `chunk_embeddings`: Chunk-level embeddings (2048D)
+- `paper_similarities`: Document similarity edges
+- `chunk_similarities`: Chunk similarity edges
+- `implementations`: GitHub/implementation links
+- `citation_network`: Academic citation graph
+
+## Environment Variables
+
+Create a `.env` file with:
+
+```bash
+# Database
+ARANGO_HOST=localhost
+ARANGO_PORT=8529
+ARANGO_USERNAME=root
+ARANGO_PASSWORD=your_password
+ARANGO_DATABASE=information_reconstructionism
+
+# GPU Settings
+USE_GPU=true
+GPU_DEVICES=0,1
+
+# Processing
+BATCH_SIZE=32
+CHUNK_SIZE=1024
+```

@@ -52,6 +52,10 @@ class GPUBatchProcessor:
     
     def validate_embeddings_batch(self, embeddings):
         """Validate embeddings have correct properties"""
+        # Convert to numpy array if needed
+        if isinstance(embeddings, list):
+            embeddings = np.array(embeddings)
+        
         embeddings_tensor = torch.from_numpy(embeddings).float().to(self.device)
         
         # Check for NaN or Inf
@@ -182,9 +186,13 @@ def main(max_workers=None):
     # Initialize GPU processor
     gpu_processor = GPUBatchProcessor(device_id=gpu_id)
     
-    # Connect to database
-    client = ArangoClient(hosts=arango_host)
-    db = client.db(db_name, username=username, password=password)
+    # Connect to database with error handling
+    try:
+        client = ArangoClient(hosts=arango_host)
+        db = client.db(db_name, username=username, password=password)
+    except Exception as e:
+        logger.error(f"Failed to connect to database: {e}")
+        raise
     
     # Ensure collections exist
     if not db.has_collection('papers_exp2'):
@@ -228,7 +236,6 @@ def main(max_workers=None):
                 futures = []
                 
                 # Clear GPU cache and run garbage collection
-                import gc
                 gc.collect()
                 torch.cuda.empty_cache()
         

@@ -25,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class GPUEmbeddingGenerator:
-    def __init__(self, model_name='jinaai/jina-embeddings-v2-base-en', device_ids=[0, 1], use_fp16=True):
+    def __init__(self, model_name='jinaai/jina-embeddings-v4', device_ids=[0, 1], use_fp16=True):
         """
         Initialize GPU-accelerated embedding generator
         
@@ -163,7 +163,7 @@ def process_chunks_file(input_file, output_file, embedding_generator, batch_size
         chunk['embedding'] = embeddings[i].tolist()
     
     # Update data
-    data['embedding_model'] = 'jinaai/jina-embeddings-v2-base-en'
+    data['embedding_model'] = self.model_name
     data['embedding_dim'] = embedding_generator.embedding_dim
     data['gpu_processed'] = True
     data['processing_timestamp'] = datetime.now().isoformat()
@@ -280,7 +280,7 @@ def main():
         'total_files': len(chunk_files),
         'total_duration_seconds': total_duration,
         'chunks_per_second': total_chunks / total_duration,
-        'embedding_model': 'jinaai/jina-embeddings-v2-base-en',
+        'embedding_model': 'jinaai/jina-embeddings-v4',
         'embedding_dim': embedding_generator.embedding_dim,
         'gpu_count': len(gpu_ids),
         'batch_size': batch_size,

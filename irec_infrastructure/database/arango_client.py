@@ -50,7 +50,10 @@ class ArangoClient:
         """
         self.host = host or os.environ.get('ARANGO_HOST', 'http://localhost:8529')
         self.username = username or os.environ.get('ARANGO_USERNAME', 'root')
-        self.password = password or os.environ.get('ARANGO_PASSWORD', '')
+        self.password = password if password is not None else os.environ.get('ARANGO_PASSWORD', None)
+        
+        if not self.password:
+            raise ValueError("Database password must be provided either as parameter or via ARANGO_PASSWORD environment variable")
         
         # Initialize client
         self.client = ArangoDBClient(hosts=self.host)
@@ -62,11 +65,15 @@ class ArangoClient:
     def sys_db(self):
         """Get system database connection."""
         if self._sys_db is None:
-            self._sys_db = self.client.db(
-                '_system',
-                username=self.username,
-                password=self.password
-            )
+            try:
+                self._sys_db = self.client.db(
+                    '_system',
+                    username=self.username,
+                    password=self.password
+                )
+            except Exception as e:
+                logger.error(f"Failed to connect to system database: {e}")
+                raise ConnectionError(f"Failed to connect to ArangoDB system database at {self.host}: {str(e)}")
         return self._sys_db
     
     def create_database(

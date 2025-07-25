@@ -157,13 +157,22 @@ def create_3d_chunk_primitive_graph(chunks, primitive_counts, output_path):
             reduced = pca.fit_transform(embeddings)
             
             # Calculate semantic coherence (average pairwise similarity)
-            similarities = []
-            for i in range(min(len(embeddings), 50)):  # Sample for efficiency
-                for j in range(i+1, min(len(embeddings), 50)):
-                    sim = np.dot(embeddings[i], embeddings[j]) / (
-                        np.linalg.norm(embeddings[i]) * np.linalg.norm(embeddings[j])
-                    )
-                    similarities.append(sim)
+            # Normalize embeddings once to avoid repeated norm calculations
+            norms = np.linalg.norm(embeddings[:min(len(embeddings), 50)], axis=1)
+            # Filter out zero norms to avoid division by zero
+            valid_indices = norms > 0
+            if np.sum(valid_indices) > 1:
+                valid_embeddings = embeddings[:min(len(embeddings), 50)][valid_indices]
+                valid_norms = norms[valid_indices]
+                normalized_embeddings = valid_embeddings / valid_norms[:, np.newaxis]
+                
+                similarities = []
+                for i in range(len(normalized_embeddings)):
+                    for j in range(i+1, len(normalized_embeddings)):
+                        sim = np.dot(normalized_embeddings[i], normalized_embeddings[j])
+                        similarities.append(sim)
+            else:
+                similarities = []
             
             avg_similarity = np.mean(similarities) if similarities else 0.5
             

@@ -32,6 +32,16 @@ class GPUDocumentAggregator:
             device_ids: List of GPU IDs to use
             aggregation_method: Method for aggregating chunk similarities
         """
+        # Validate GPU availability
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA is not available. GPU is required for this module.")
+        
+        # Validate device IDs
+        available_gpus = torch.cuda.device_count()
+        for device_id in device_ids:
+            if device_id >= available_gpus:
+                raise ValueError(f"GPU device {device_id} not available. Only {available_gpus} GPUs detected.")
+        
         self.device_ids = device_ids
         self.primary_device = torch.device(f'cuda:{device_ids[0]}')
         self.aggregation_method = aggregation_method
@@ -173,7 +183,8 @@ def main():
                 break
                 
             for result in results:
-                chunks_by_paper[result['paper_id']].append(result['embedding'])
+                if result['embedding'] is not None:
+                    chunks_by_paper[result['paper_id']].append(result['embedding'])
             
             pbar.update(len(results))
             offset += batch_size

@@ -19,7 +19,7 @@ def download_pdf(arxiv_id, output_dir):
         return True
     
     try:
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
         
         total_size = int(response.headers.get('content-length', 0))
@@ -33,6 +33,12 @@ def download_pdf(arxiv_id, output_dir):
         return True
     except Exception as e:
         print(f"  Error downloading {arxiv_id}: {e}")
+        # Clean up partial file if it exists
+        if output_path.exists():
+            try:
+                output_path.unlink()
+            except Exception:
+                pass
         return False
 
 def main():
@@ -104,11 +110,14 @@ def main():
         # Create symlinks
         for pdf in output_dir.glob("*.pdf"):
             symlink = exp_dir / pdf.name
-            # Remove existing symlink if it exists
-            if symlink.exists() and symlink.is_symlink():
-                symlink.unlink()
-            # Create new symlink
-            symlink.symlink_to(pdf.absolute())
+            try:
+                # Remove existing symlink if it exists
+                if symlink.exists() and symlink.is_symlink():
+                    symlink.unlink()
+                # Create new symlink
+                symlink.symlink_to(pdf.absolute())
+            except Exception as e:
+                print(f"Warning: Could not create symlink {symlink}: {e}")
     
     print(f"\n✓ Created symlinks in experiment directories")
 
