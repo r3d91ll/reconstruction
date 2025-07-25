@@ -24,12 +24,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LocalJinaConfig:
     """Configuration for local Jina GPU model"""
-    model_name: str = "jinaai/jina-embeddings-v2-base-en"  # Use v2 which is more stable
+    model_name: str = "jinaai/jina-embeddings-v4"  # Using v4 for better performance
     device_ids: List[int] = None  # Default: use all available GPUs
     use_fp16: bool = True
-    max_length: int = 8192  # Max context length
+    max_length: int = 32768  # Max context length for v4
     chunk_size: int = 1024  # Target chunk size in tokens
     chunk_overlap: int = 200  # Overlap between chunks
+    embedding_dim: int = 2048  # v4 embedding dimension
     
 
 class LocalJinaGPU:
@@ -212,10 +213,16 @@ class LocalJinaGPU:
         Returns:
             List of embeddings as numpy arrays
         """
-        # Check if model has encode method (Jina v2 does)
-        if hasattr(self.model, 'encode'):
-            # Use the model's encode method directly
-            embeddings = self.model.encode(chunks)
+        # Check if model has encode_text method (Jina v4)
+        base_model = self.model.module if hasattr(self.model, 'module') else self.model
+        if hasattr(base_model, 'encode_text'):
+            # Use Jina v4's encode_text method
+            with torch.no_grad():
+                embeddings = base_model.encode_text(
+                    texts=chunks,
+                    task="retrieval",
+                    prompt_name="passage"
+                )
             # Convert to list of numpy arrays if needed
             if isinstance(embeddings, torch.Tensor):
                 embeddings = embeddings.cpu().numpy()
@@ -244,7 +251,8 @@ class LocalJinaGPU:
                 inputs = {k: v.to(self.primary_device) for k, v in inputs.items()}
                 
                 # Generate embeddings
-                outputs = self.model(**inputs)
+                # Jina v4 requires task_label
+                outputs = self.model(**inputs, task_label='retrieval.query')
                 
                 # Mean pooling
                 token_embeddings = outputs.last_hidden_state
@@ -285,6 +293,25 @@ class LocalJinaGPU:
         Returns:
             Array of embeddings
         """
+        # Check if model has encode_text method (Jina v4)
+        base_model = self.model.module if hasattr(self.model, 'module') else self.model
+        if hasattr(base_model, 'encode_text'):
+            # Use Jina v4's encode_text method
+            all_embeddings = []
+            with torch.no_grad():
+                for i in range(0, len(texts), batch_size):
+                    batch_texts = texts[i:i + batch_size]
+                    embeddings = base_model.encode_text(
+                        texts=batch_texts,
+                        task="retrieval",
+                        prompt_name="passage"
+                    )
+                    if isinstance(embeddings, torch.Tensor):
+                        embeddings = embeddings.cpu().numpy()
+                    all_embeddings.append(embeddings)
+            return np.vstack(all_embeddings)
+            
+        # Fallback to manual encoding
         all_embeddings = []
         
         with torch.no_grad():
@@ -306,7 +333,7 @@ class LocalJinaGPU:
                 # Generate embeddings
                 outputs = self.model(**inputs)
                 
-                # Mean pooling (same as above)
+                # Mean pooling
                 token_embeddings = outputs.last_hidden_state
                 attention_mask = inputs['attention_mask']
                 input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
@@ -369,14 +396,13 @@ def create_local_jina_processor(chunk_size=1024):
         LocalJinaGPU instance configured for the hardware
     """
     config = LocalJinaConfig(
-        model_name="jinaai/jina-embeddings-v2-base-en",  # Use stable v2
-        device_ids=[0, 1],  # Both A6000s
-        use_fp16=True,  # Use half precision for speed
-        max_length=8192,  # Max context
-        chunk_size=chunk_size,  # Configurable chunk size
-        chunk_overlap=200  # Some overlap for context
+        model_name="jinaai/jina-embeddings-v4",
+        device_ids=[0, 1],  # Both A6000 GPUs
+        use_fp16=True,
+        max_length=32768,
+        chunk_size=chunk_size,
+        chunk_overlap=200
     )
-    
     return LocalJinaGPU(config)
 
 

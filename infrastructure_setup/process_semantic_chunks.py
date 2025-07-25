@@ -142,9 +142,18 @@ class ChunkCentricPipeline:
                         'processed_at': datetime.now().isoformat()
                     }
                     
-                    # Simple, atomic insert
-                    self.db.collection('chunks').insert(chunk_data)
-                    chunks_stored += 1
+                    # Simple, atomic insert with duplicate handling
+                    try:
+                        self.db.collection('chunks').insert(chunk_data)
+                        chunks_stored += 1
+                    except Exception as e:
+                        if "unique constraint violated" in str(e) or "duplicate key" in str(e).lower():
+                            logger.debug(f"Chunk {chunk['chunk_id']} already exists, skipping")
+                            # Still count it as stored since it exists
+                            chunks_stored += 1
+                        else:
+                            logger.error(f"Error inserting chunk {chunk['chunk_id']}: {e}")
+                            raise
                 
                 return {
                     'success': True,

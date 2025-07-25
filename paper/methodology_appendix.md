@@ -405,7 +405,8 @@ class ImplementationPathAnalyzer:
             'context_richness': sum(len(n.get('content', '')) for n in nodes_data),
             
             # Direct vs indirect: whether path takes shortcuts
-            'directness': 1.0 / len(path),
+            # Use exponential decay to avoid sharp jumps for short paths
+            'directness': np.exp(-0.3 * (len(path) - 2)) if len(path) >= 2 else 1.0,
         }
         
         # Calculate overall quality score
