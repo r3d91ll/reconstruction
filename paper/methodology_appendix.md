@@ -20,14 +20,16 @@ This appendix provides comprehensive methodology for testing the hypothesis that
 **H1: Context Amplification Hypothesis**
 
 Null: Context contributes additively to information transfer
+
 ```
 Transfer_rate = β₀ + β₁·WHERE + β₂·WHAT + β₃·CONVEYANCE + β₄·Context
 ```
 
 Alternative: Context acts as exponential amplifier
+
 ```
 Transfer_rate = WHERE × WHAT × (BaseConveyance × Context^α) × TIME
-where α > 1
+where α > 1 (empirically discovered, NOT predetermined)
 ```
 
 **Experimental Design (Enhanced with Bottom-up Methodology):**
@@ -44,10 +46,45 @@ Following the bottom-up curriculum approach demonstrated by Dedhia et al. (2025)
    - Trace how developers progress from theory to implementation
    - Identify which context elements trigger implementation decisions
    - Map "implementation traces" showing reasoning chains
-4. **Outcome Measures**: 
+4. **Outcome Measures**:
    - Primary: Implementation success within 6 months
    - Secondary: Time to implementation, code quality score
-5. **Analysis**: Compare model fits using AIC/BIC, test α significance
+5. **Analysis**: Compare model fits using AIC/BIC, test empirically discovered α significance
+
+### A.1.1 Empirical α Discovery (Avoiding Circular Reasoning)
+
+**Critical Methodology Update**: We do NOT predetermine α values. Instead, we discover them empirically from ground truth data:
+
+```python
+def discover_optimal_alpha(dataset, ground_truth):
+    """Discover α empirically from data, avoiding circular reasoning"""
+    alpha_candidates = np.arange(1.0, 3.0, 0.1)
+    best_alpha = None
+    best_accuracy = 0
+    
+    for α in alpha_candidates:
+        # Apply model with candidate α
+        predictions = []
+        for paper in dataset:
+            conveyance = compute_conveyance(paper, α)
+            predicted_impact = predict_implementation(conveyance)
+            predictions.append(predicted_impact)
+        
+        # Compare to ground truth (NOT using α in evaluation)
+        accuracy = evaluate_predictions(predictions, ground_truth)
+        
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_alpha = α
+    
+    return best_alpha, best_accuracy
+```
+
+**Ground Truth Metrics** (independent of model):
+- Implementation existence (GitHub repositories)
+- Adoption metrics (stars, forks, citations)
+- Time to implementation
+- Cross-domain application
 
 ### A.2 Zero Propagation Testing
 
@@ -171,6 +208,7 @@ def generate_implementation_paths(papers, implementations):
 ```
 
 **Path-based Metrics:**
+
 - Path length: Number of context elements traversed
 - Path completeness: Percentage of possible nodes included
 - Path coherence: Semantic similarity between adjacent nodes
@@ -237,6 +275,7 @@ def ab_test_retrieval_systems():
 **Objective**: Create ground truth dataset of verified paper→implementation links
 
 **Data Sources:**
+
 1. **Papers**: arXiv CS categories (cs.AI, cs.LG, cs.CL, cs.CV)
 2. **Implementations**: GitHub repositories with >10 stars
 3. **Linking Methods**:
@@ -359,21 +398,23 @@ CONTEXT_ELEMENTS = {
 ```
 
 **Inter-annotator Agreement Protocol:**
+
 - 3 independent annotators per paper
 - Cohen's kappa > 0.7 required
 - Disagreements resolved by majority vote
 
 ## C. Dimensional Measurement Methodology
 
-### C.1 WHERE Dimension: Accessibility Scoring
+### C.1 WHERE Dimension: Accessibility Scoring (Within-Dimension Entropy)
 
 **Measurement Protocol:**
 
 ```python
 def measure_where_dimension(paper):
-    """Calculate accessibility score ∈ [0,1]"""
+    """Calculate accessibility score using within-dimension entropy normalization"""
     
-    scores = {
+    # Calculate entropy for each accessibility component
+    access_components = {
         'open_access': 1.0 if paper.is_open_access else 0.0,
         'preprint_available': 1.0 if paper.has_arxiv else 0.5,
         'institution_access': estimate_institutional_coverage(paper),
@@ -381,21 +422,23 @@ def measure_where_dimension(paper):
         'format_accessibility': check_pdf_quality(paper)
     }
     
-    # Weighted combination
-    weights = {'open_access': 0.4, 'preprint_available': 0.3, 
-               'institution_access': 0.1, 'language': 0.1, 
-               'format_accessibility': 0.1}
+    # Calculate Shannon entropy within WHERE dimension
+    H_WHERE = calculate_shannon_entropy(access_components)  # bits
+    H_max_WHERE = np.log2(len(access_components))  # Maximum possible entropy
     
-    return sum(scores[k] * weights[k] for k in scores)
+    # Normalize to [0,1] for multiplicative model
+    WHERE_norm = H_WHERE / H_max_WHERE
+    
+    return WHERE_norm
 ```
 
-### C.2 WHAT Dimension: Semantic Clarity
+### C.2 WHAT Dimension: Semantic Clarity (Within-Dimension Entropy)
 
 **Measurement Using Embeddings:**
 
 ```python
 def measure_what_dimension(paper, implementation):
-    """Calculate semantic overlap using embeddings"""
+    """Calculate semantic overlap using within-dimension entropy normalization"""
     
     # Extract text for embedding
     paper_text = f"{paper.title} {paper.abstract} {paper.introduction}"
@@ -405,13 +448,17 @@ def measure_what_dimension(paper, implementation):
     paper_embedding = embed_with_jina(paper_text)
     impl_embedding = embed_with_jina(impl_text)
     
-    # Calculate similarity
-    semantic_similarity = 1 - cosine(paper_embedding, impl_embedding)
+    # Calculate semantic entropy distribution
+    semantic_distribution = calculate_semantic_distribution(paper_embedding, impl_embedding)
     
-    # Adjust for clarity factors
-    clarity_multiplier = calculate_clarity_score(paper)
+    # Calculate Shannon entropy within WHAT dimension
+    H_WHAT = calculate_shannon_entropy(semantic_distribution)  # bits
+    H_max_WHAT = calculate_max_semantic_entropy()  # Maximum possible entropy
     
-    return semantic_similarity * clarity_multiplier
+    # Normalize to [0,1] for multiplicative model
+    WHAT_norm = H_WHAT / H_max_WHAT
+    
+    return WHAT_norm
 ```
 
 ### C.3 CONVEYANCE Dimension: Actionability Measurement
@@ -435,8 +482,9 @@ def measure_conveyance_dimension(paper, context_elements):
     # Context score calculation
     context_score = calculate_context_score(context_elements)
     
-    # Apply exponential amplification
-    alpha = 1.67  # From pilot study
+    # Apply exponential amplification with empirically discovered α
+    # NOTE: α is discovered from data, not predetermined
+    alpha = discover_optimal_alpha_for_domain(paper.domain)
     amplified_conveyance = base_conveyance * (context_score ** alpha)
     
     return min(amplified_conveyance, 1.0)  # Cap at 1.0
@@ -710,12 +758,14 @@ def temporal_validation():
 This methodology provides rigorous experimental protocols for testing whether context acts as an exponential amplifier in theory-to-practice information transfer. The multi-method approach combining observational data, controlled experiments, and predictive modeling will provide converging evidence for or against our hypotheses.
 
 Key strengths:
+
 - Large-scale data collection (10,000+ papers)
 - Multiple validation approaches
 - Clear statistical criteria
 - Reproducible protocols
 
 Expected timeline:
+
 - Months 1-3: Data collection and annotation
 - Months 4-5: Experimental execution
 - Month 6: Analysis and reporting
@@ -735,3 +785,91 @@ This experimental design incorporates several key methodological innovations fro
 4. **Multi-stage Quality Control**: The filtering pipeline ensures high-quality data while maintaining the scientific rigor necessary for hypothesis testing.
 
 These methodological choices position our work within the broader context of structured knowledge representation and transfer, while maintaining our unique focus on context as an exponential amplifier in information dynamics.
+
+## G. FRAME Discovery Through Citation Networks
+
+### G.1 Citation-Based FRAME Measurement
+
+**Empirical Discovery of Directional Compatibility:**
+
+```python
+def discover_frame_from_citations(citation_network):
+    """Discover FRAME as directional compatibility from citation patterns"""
+    
+    frame_edges = []
+    
+    for source_paper in citation_network.nodes():
+        for target_paper in source_paper.cites:
+            # Temporal constraint (information flows forward)
+            if source_paper.timestamp > target_paper.timestamp:
+                frame_score = 0
+            else:
+                # Measure actual information flow
+                semantic_overlap = measure_chunk_propagation(source_paper, target_paper)
+                citation_strength = get_citation_context_strength(source_paper, target_paper)
+                temporal_distance = target_paper.timestamp - source_paper.timestamp
+                
+                # FRAME emerges from these measurements
+                frame_score = compute_directional_compatibility(
+                    semantic_overlap, citation_strength, temporal_distance
+                )
+            
+            frame_edges.append({
+                'source': source_paper.id,
+                'target': target_paper.id,
+                'frame_forward': frame_score,
+                'frame_backward': 0 if frame_score > 0 else compute_reverse_frame()
+            })
+    
+    return frame_edges
+```
+
+### G.2 Asynchronous Decay Measurement
+
+**Tracking Dimensional Decay Rates:**
+
+```python
+def measure_dimensional_decay(paper_cohort, time_window):
+    """Measure asynchronous decay rates for each dimension"""
+    
+    decay_rates = {}
+    
+    for dimension in ['WHERE', 'WHAT', 'CONVEYANCE', 'TIME']:
+        values_over_time = []
+        
+        for t in time_window:
+            # Measure dimension value at time t
+            if dimension == 'WHERE':
+                value = measure_infrastructure_persistence(paper_cohort, t)
+            elif dimension == 'WHAT':
+                value = measure_semantic_drift(paper_cohort, t)
+            elif dimension == 'CONVEYANCE':
+                value = measure_method_obsolescence(paper_cohort, t)
+            else:  # TIME
+                value = 1.0  # TIME doesn't decay, it progresses
+            
+            values_over_time.append(value)
+        
+        # Fit exponential decay model
+        if dimension != 'TIME':
+            lambda_decay, r_squared = fit_exponential_decay(values_over_time, time_window)
+            decay_rates[dimension] = {
+                'lambda': lambda_decay,
+                'half_life': np.log(2) / lambda_decay,
+                'r_squared': r_squared
+            }
+    
+    return decay_rates
+```
+
+## H. Updated Conclusion
+
+This methodology provides rigorous experimental protocols for testing whether context acts as an exponential amplifier in theory-to-practice information transfer, while addressing all major theoretical critiques:
+
+**Key Methodological Innovations:**
+1. **Empirical α Discovery**: Avoiding circular reasoning by discovering α from ground truth
+2. **Within-Dimension Entropy**: Preserving Shannon's formalism while enabling multiplication
+3. **FRAME as Emergent Property**: Discovering directional compatibility from citation networks
+4. **Asynchronous Decay Tracking**: Measuring different decay rates per dimension
+
+The methodology maintains theoretical rigor while ensuring all critiques from the review are addressed through empirical, data-driven approaches.
