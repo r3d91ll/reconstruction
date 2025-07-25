@@ -1,10 +1,34 @@
 # Information Reconstructionism
 
-A new theory of observer-dependent information existence.
+A new theory of observer-dependent information existence with supporting infrastructure for validation.
 
-## Core Theory
+## Project Structure
 
-Information exists as a multiplicative function of dimensional prerequisites:
+This repository contains two main components that work together:
+
+### 📚 Paper (`paper/`)
+The theoretical framework, mathematical proofs, and academic materials for Information Reconstructionism.
+
+- **Core Theory**: Mathematical framework proving information as multiplicative function
+- **Validation**: Wolfram scripts and Python demonstrations
+- **Evidence**: Empirical validation of zero propagation and context amplification
+- See [`paper/PAPER_CLAUDE.md`](paper/PAPER_CLAUDE.md) for theory-specific guidance
+
+### 🏗️ Infrastructure (`infrastructure/`)
+Scalable document processing system for validating the theory on large academic corpora.
+
+- **3-Collection Architecture**: Atomic storage of metadata, documents, and chunks
+- **GPU Processing**: Dual A6000 GPUs with Jina v4 embeddings
+- **Graph Database**: ArangoDB for similarity and relationship queries
+- See [`infrastructure/INFRA_CLAUDE.md`](infrastructure/INFRA_CLAUDE.md) for implementation details
+
+### 🧪 Experiments (`experiments/`)
+Shared experiments that use the infrastructure to validate theoretical claims.
+
+- **Experiment 1**: Multiplicative model validation
+- **Experiment 2**: Large-scale GPU processing and analysis
+
+## Core Equation
 
 ```
 Information(i→j|S-O) = WHERE × WHAT × CONVEYANCE × TIME × FRAME
@@ -12,67 +36,64 @@ Information(i→j|S-O) = WHERE × WHAT × CONVEYANCE × TIME × FRAME
 
 If ANY dimension = 0, then Information = 0
 
-## Repository Structure
+## Quick Start
 
-```
-reconstructionism/
-├── README.md              # This file
-├── CLAUDE.md             # Project instructions
-├── FrameworkAcademicValidationStrategy.md
-├── theory/               # Core theoretical papers
-├── validation/           # Mathematical validation & experiments
-│   ├── experiment_1/    # WHERE × WHAT × Context mapping
-│   ├── docs/           # Validation documentation
-│   ├── setup/          # Setup scripts
-│   └── results/        # Test results (gitignored)
-├── presentations/        # Academic presentations
-└── evidence/            # Empirical evidence
+### Theory Work
+```bash
+cd paper/
+# Review theoretical framework
+cat theory/main_theory.md
+# Run Wolfram validation
+mathematica validation/wolfram/zero_propagation.nb
 ```
 
-## Key Principles
+### Infrastructure Setup
+```bash
+cd infrastructure/
+./setup_venv.sh
+source venv/bin/activate
+pip install -r setup/requirements.txt
 
-1. **Multiplicative Model**: Information requires ALL dimensions > 0
-2. **Observer Dependency**: Different observers create different information realities
+# Process documents
+python setup/process_documents_atomic.py --count 10 --clean-start
+```
+
+### Running Experiments
+```bash
+cd experiments/
+# Test multiplicative model
+python experiment_1/run_experiment.py
+# Large-scale processing
+./experiment_2/pipeline/launch_gpu_pipeline.sh
+```
+
+## Key Innovation
+
+Information Reconstructionism differs from traditional information theory by:
+
+1. **Observer Dependency**: Information exists relative to observers
+2. **Multiplicative Model**: All dimensions must be > 0
 3. **Context Amplification**: Context acts as exponential amplifier (Context^α)
 4. **Theory-Practice Bridges**: High-conveyance connections between abstract and concrete
 
-## Validation Status
+## Current Status
 
-- [x] Mathematical proofs complete
-- [x] Zero propagation validated
-- [x] Context amplification confirmed (α = 1.5)
-- [x] Semantic similarity graph implemented
-- [ ] Conveyance measurement (in progress)
-- [ ] Large-scale validation (10M+ documents)
+- ✅ Core theoretical framework documented
+- ✅ Mathematical foundations laid
+- ✅ Infrastructure implemented with atomic transactions
+- 🔄 Validation experiments in progress
+- 📝 Paper preparation for academic publication
 
-## Quick Start
+## Future Separation
 
-```bash
-# Install dependencies
-cd validation/setup
-./install_dependencies.sh
+The infrastructure is designed to be easily separated into its own repository when the time comes. Simply move the `infrastructure/` directory and update import paths in experiments.
 
-# Run test pipeline
-cd ../experiment_1/pipeline
-python test_pipeline_10.py
-```
+## Contributing
 
-## Required Environment
-
-- Python 3.8+
-- ArangoDB 3.11+
-- CUDA-capable GPU (for embeddings)
-- Wolfram Alpha API key (optional)
-
-## Publications
-
-- Main theory paper: [In preparation]
-- Mathematical validation: See `/validation/docs/`
+This is an active research project. For questions or contributions:
+- Theory/Paper: Focus on mathematical rigor and empirical validation
+- Infrastructure: Maintain atomic transaction integrity and GPU optimization
 
 ## License
 
-MIT License - See LICENSE file
-
-## Contact
-
-For academic collaboration or questions about the theory, please open an issue.
+Apache 2.0 - See LICENSE file for details
