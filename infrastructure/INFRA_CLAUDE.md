@@ -178,6 +178,9 @@ mypy irec_infrastructure/
 
 ### Processing Documents
 
+#### Full Document Pipeline
+Process complete PDFs with text extraction and semantic chunking:
+
 ```bash
 # Process arXiv documents with 3-collection pipeline
 python setup/process_documents_three_collections.py \
@@ -194,6 +197,25 @@ python setup/process_documents_three_collections.py \
 ```
 
 **Note**: The three-collection pipeline ensures all collections (metadata, documents, chunks) are updated atomically, preventing partial states.
+
+#### Abstract-Only Pipeline
+Rapidly process metadata and abstract embeddings:
+
+```bash
+# Process abstracts only (167,000x faster!)
+python setup/process_abstracts_only.py \
+    --count 1000 \
+    --metadata-dir /mnt/data/arxiv_data/metadata \
+    --db-name arxiv_abstracts \
+    --clean-start
+
+# Process full metadata collection
+python setup/process_abstracts_only.py \
+    --count 61463 \
+    --db-name arxiv_abstracts_full
+```
+
+**Note**: The abstract pipeline automatically uses GPU 1, allowing parallel processing with the full document pipeline on GPU 0.
 
 ## Environment Variables
 
@@ -218,15 +240,31 @@ CHUNK_SIZE=1024
 
 ## Infrastructure Commands
 
-### Launch a test run (10 documents)
+### Full Document Processing
 ```bash
+# Test run (10 documents)
 python setup/process_documents_three_collections.py --count 10 --clean-start
+
+# Production run
+python setup/process_documents_three_collections.py --count 2200 --db-name irec_production
 ```
 
-### Verify database integrity
+### Abstract-Only Processing
 ```bash
-# The pipeline includes built-in verification after processing
-python setup/process_documents_three_collections.py --count 0
+# Test run (100 abstracts)
+python setup/process_abstracts_only.py --count 100 --clean-start
+
+# Full metadata collection
+python setup/process_abstracts_only.py --count 61463 --db-name arxiv_abstracts_full
+```
+
+### Parallel Processing (Both GPUs)
+```bash
+# Terminal 1: Full documents on GPU 0
+python setup/process_documents_three_collections.py --count 2200
+
+# Terminal 2: Abstracts on GPU 1
+python setup/process_abstracts_only.py --count 61463
 ```
 
 ## Important Notes

@@ -306,11 +306,39 @@ class LocalJinaGPU:
                         task="retrieval",
                         prompt_name="passage"
                     )
-                    if isinstance(embeddings, torch.Tensor):
-                        embeddings = embeddings.cpu().numpy()
-                    all_embeddings.append(embeddings)
+    def _ensure_numpy(self, obj):
+        """Convert various tensor types to numpy array."""
+        if isinstance(obj, np.ndarray):
+            return obj
+        elif torch.is_tensor(obj):
+            return obj.detach().cpu().numpy()
+        elif hasattr(obj, 'detach') and hasattr(obj, 'cpu'):
+            return obj.detach().cpu().numpy()
+        elif isinstance(obj, list):
+            # Handle list of tensors or mixed lists
+            return np.array([self._ensure_numpy(item) for item in obj])
+        else:
+            return np.array(obj)
+
+    def encode_batch(
+        self,
+        texts: List[str],
+        batch_size: int = 32
+    ) -> np.ndarray:
+        # ... earlier logic ...
+        for ... in ...:
+            embeddings = ...  # result from base_model.encode_text()
+            embeddings = self._ensure_numpy(embeddings)
+            all_embeddings.append(embeddings)
+
+        try:
             return np.vstack(all_embeddings)
-            
+        except Exception as e:
+            print(f"Error in vstack: {e}")
+            print(f"Number of embeddings: {len(all_embeddings)}")
+            for i, emb in enumerate(all_embeddings):
+                print(f"Embedding {i}: type={type(emb)}, shape={emb.shape if hasattr(emb, 'shape') else 'no shape'}")
+            raise
         # Fallback to manual encoding
         all_embeddings = []
         
@@ -345,7 +373,9 @@ class LocalJinaGPU:
                 batch_embeddings = batch_embeddings.cpu().numpy()
                 all_embeddings.append(batch_embeddings)
                 
-        return np.vstack(all_embeddings)
+        # Convert all embeddings to numpy arrays before stacking
+        numpy_embeddings = [self._ensure_numpy(emb) for emb in all_embeddings]
+        return np.vstack(numpy_embeddings)
         
     def benchmark(self) -> Dict[str, float]:
         """
