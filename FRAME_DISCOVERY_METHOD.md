@@ -32,9 +32,34 @@ citation_graph = {
 
 ### Step 2: Analyze Chunk Propagation
 ```python
+def find_semantic_matches(source_chunks, target_chunks, threshold=0.7):
+    """Find semantically similar chunks between source and target."""
+    matches = []
+    for s_chunk in source_chunks:
+        for t_chunk in target_chunks:
+            similarity = compute_semantic_similarity(s_chunk, t_chunk)
+            if similarity > threshold:
+                matches.append((s_chunk, t_chunk, similarity))
+    return matches
+
+def measure_semantic_drift(propagated_matches):
+    """Measure how much chunks transformed during propagation."""
+    if not propagated_matches:
+        return 0.0
+    
+    total_drift = sum(1 - similarity for _, _, similarity in propagated_matches)
+    return total_drift / len(propagated_matches)
+
 def analyze_propagation(source_paper, target_paper):
     source_chunks = source_paper['chunks']
     target_chunks = target_paper['chunks']
+    
+    # Safety check for empty chunks
+    if not source_chunks or not target_chunks:
+        return {
+            'propagation_rate': 0.0,
+            'transformation_score': 0.0
+        }
     
     # Which chunks appear (transformed) in target?
     propagated = find_semantic_matches(source_chunks, target_chunks)
@@ -42,8 +67,11 @@ def analyze_propagation(source_paper, target_paper):
     # How much did they transform?
     transformation_score = measure_semantic_drift(propagated)
     
+    # Avoid division by zero
+    propagation_rate = len(propagated) / len(source_chunks) if source_chunks else 0.0
+    
     return {
-        'propagation_rate': len(propagated) / len(source_chunks),
+        'propagation_rate': propagation_rate,
         'transformation_score': transformation_score
     }
 ```

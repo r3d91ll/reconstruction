@@ -41,9 +41,9 @@ class ProductionPipeline:
     
     def __init__(self):
         # Database configuration from environment
-        self.db_host = "192.168.1.69"
-        self.db_port = 8529
-        self.db_name = "irec_production"
+        self.db_host = os.environ.get('ARANGO_HOST', '192.168.1.69')
+        self.db_port = int(os.environ.get('ARANGO_PORT', '8529'))
+        self.db_name = os.environ.get('ARANGO_DB_NAME', 'irec_production')
         self.username = os.environ.get('ARANGO_USERNAME', 'root')
         self.password = os.environ.get('ARANGO_PASSWORD', '')
         
@@ -124,48 +124,62 @@ class ProductionPipeline:
             if not result['success']:
                 return {'success': False, 'error': result.get('error')}
             
-            # Store in database
-            # 1. Document
-            doc_data = {
-                '_key': result['document_id'],
-                'arxiv_id': result['document_id'],
-                'title': result['metadata']['title'],
-                'authors': result['metadata']['authors'],
-                'abstract': result['metadata']['abstract'],
-                'categories': result['metadata']['categories'],
-                'published': result['metadata']['published'],
-                'updated': result['metadata']['updated'],
-                'full_text': result['full_text'],
-                'text_length': result['processing']['text_length'],
-                'num_chunks': result['num_chunks'],
-                'processing_timestamp': result['processing']['extraction_timestamp']
-            }
-            self.db.collection('documents').insert(doc_data, overwrite=True)
+            # Store in database with transaction support
+            # Begin transaction with write access to all required collections
+            transaction = self.db.begin_transaction(
+                write=['documents', 'chunks', 'metadata']
+            )
             
-            # 2. Chunks
-            chunks_collection = self.db.collection('chunks')
-            for chunk in result['chunks']:
-                chunk_data = {
-                    '_key': chunk['chunk_id'],
-                    'chunk_id': chunk['chunk_id'],
-                    'arxiv_id': chunk['arxiv_id'],
-                    'chunk_index': chunk['chunk_index'],
-                    'text': chunk['text'],
-                    'tokens': chunk['tokens'],
-                    'embedding': chunk['embedding']
+            try:
+                # 1. Document
+                doc_data = {
+                    '_key': result['document_id'],
+                    'arxiv_id': result['document_id'],
+                    'title': result['metadata']['title'],
+                    'authors': result['metadata']['authors'],
+                    'abstract': result['metadata']['abstract'],
+                    'categories': result['metadata']['categories'],
+                    'published': result['metadata']['published'],
+                    'updated': result['metadata']['updated'],
+                    'full_text': result['full_text'],
+                    'text_length': result['processing']['text_length'],
+                    'num_chunks': result['num_chunks'],
+                    'processing_timestamp': result['processing']['extraction_timestamp']
                 }
-                chunks_collection.insert(chunk_data, overwrite=True)
-            
-            # 3. Metadata
-            meta_data = {
-                '_key': result['document_id'],
-                'arxiv_id': result['document_id'],
-                'pdf_url': result['metadata']['pdf_url'],
-                'abs_url': result['metadata']['abs_url'],
-                'pdf_path': result['pdf_path'],
-                'processing_mode': result['processing']['processing_mode']
-            }
-            self.db.collection('metadata').insert(meta_data, overwrite=True)
+                transaction.collection('documents').insert(doc_data, overwrite=True)
+                
+                # 2. Chunks
+                chunks_collection = transaction.collection('chunks')
+                for chunk in result['chunks']:
+                    chunk_data = {
+                        '_key': chunk['chunk_id'],
+                        'chunk_id': chunk['chunk_id'],
+                        'arxiv_id': chunk['arxiv_id'],
+                        'chunk_index': chunk['chunk_index'],
+                        'text': chunk['text'],
+                        'tokens': chunk['tokens'],
+                        'embedding': chunk['embedding']
+                    }
+                    chunks_collection.insert(chunk_data, overwrite=True)
+                
+                # 3. Metadata
+                meta_data = {
+                    '_key': result['document_id'],
+                    'arxiv_id': result['document_id'],
+                    'pdf_url': result['metadata']['pdf_url'],
+                    'abs_url': result['metadata']['abs_url'],
+                    'pdf_path': result['pdf_path'],
+                    'processing_mode': result['processing']['processing_mode']
+                }
+                transaction.collection('metadata').insert(meta_data, overwrite=True)
+                
+                # Commit the transaction
+                transaction.commit()
+                
+            except Exception as e:
+                # Rollback on any error
+                transaction.abort()
+                raise e
             
             return {
                 'success': True,

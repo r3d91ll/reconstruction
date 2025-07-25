@@ -56,28 +56,46 @@ Following the bottom-up curriculum approach demonstrated by Dedhia et al. (2025)
 **Critical Methodology Update**: We do NOT predetermine α values. Instead, we discover them empirically from ground truth data:
 
 ```python
+import numpy as np
+
 def discover_optimal_alpha(dataset, ground_truth):
-    """Discover α empirically from data, avoiding circular reasoning"""
+    """Discover alpha empirically from data using vectorized operations"""
     alpha_candidates = np.arange(1.0, 3.0, 0.1)
-    best_alpha = None
-    best_accuracy = 0
     
-    for α in alpha_candidates:
-        # Apply model with candidate α
-        predictions = []
-        for paper in dataset:
-            conveyance = compute_conveyance(paper, α)
-            predicted_impact = predict_implementation(conveyance)
-            predictions.append(predicted_impact)
-        
-        # Compare to ground truth (NOT using α in evaluation)
-        accuracy = evaluate_predictions(predictions, ground_truth)
-        
-        if accuracy > best_accuracy:
-            best_accuracy = accuracy
-            best_alpha = α
+    # Precompute base conveyance values for all papers (without alpha)
+    base_conveyances = np.array([compute_base_conveyance(paper) for paper in dataset])
+    
+    # Vectorize alpha search: compute conveyances for all alphas at once
+    # Shape: (n_alphas, n_papers)
+    alphas_matrix = alpha_candidates[:, np.newaxis]
+    conveyances_matrix = base_conveyances[np.newaxis, :] ** alphas_matrix
+    
+    # Apply prediction function vectorized across all conveyance values
+    predictions_matrix = vectorized_predict_implementation(conveyances_matrix)
+    
+    # Evaluate all alpha candidates at once
+    accuracies = np.array([
+        evaluate_predictions(predictions_matrix[i], ground_truth)
+        for i in range(len(alpha_candidates))
+    ])
+    
+    # Find best alpha
+    best_idx = np.argmax(accuracies)
+    best_alpha = alpha_candidates[best_idx]
+    best_accuracy = accuracies[best_idx]
     
     return best_alpha, best_accuracy
+
+def compute_base_conveyance(paper):
+    """Compute base conveyance value before alpha amplification"""
+    # Extract conveyance features without applying alpha
+    return paper.get('base_conveyance', 1.0)
+
+def vectorized_predict_implementation(conveyances):
+    """Vectorized prediction function for implementation impact"""
+    # Apply threshold-based prediction or more complex model
+    # Works on entire array of conveyance values
+    return (conveyances > np.median(conveyances)).astype(float)
 ```
 
 **Ground Truth Metrics** (independent of model):
@@ -107,12 +125,19 @@ def test_zero_propagation(papers, implementations):
     zero_what = pairs[pairs.semantic_overlap < 0.1]     # Different domain  
     zero_conveyance = pairs[pairs.actionability == 0]   # Pure theory
     
+    # Create boolean mask for control group (all dimensions > 0)
+    all_dimensions_positive = (
+        (pairs.accessibility_score > 0) & 
+        (pairs.semantic_overlap > 0) & 
+        (pairs.actionability > 0)
+    )
+    
     # Measure implementation rates
     results = {
         'zero_where': implementation_rate(zero_where),
         'zero_what': implementation_rate(zero_what),
         'zero_conveyance': implementation_rate(zero_conveyance),
-        'control': implementation_rate(pairs[all_dimensions > 0])
+        'control': implementation_rate(pairs[all_dimensions_positive])
     }
     
     # Test: Do any zero dimensions have >0 implementation?
@@ -156,15 +181,19 @@ def train_implementation_predictor(historical_data):
         })
         labels.append(label)
     
-    # Train competing models
-    additive_model = LogisticRegression().fit([f['additive'] for f in features], labels)
-    multiplicative_model = LogisticRegression().fit([f['multiplicative'] for f in features], labels)
+    # Extract feature arrays
+    X_additive = [f['additive'] for f in features]
+    X_multiplicative = [f['multiplicative'] for f in features]
     
-    # Compare performance on held-out test set
+    # Train competing models
+    additive_model = LogisticRegression()
+    multiplicative_model = LogisticRegression()
+    
+    # Compare performance using cross-validation
     return {
-        'additive_auc': cross_val_score(additive_model, cv=5),
-        'multiplicative_auc': cross_val_score(multiplicative_model, cv=5),
-        'feature_importance': analyze_feature_importance(multiplicative_model)
+        'additive_auc': cross_val_score(additive_model, X_additive, labels, cv=5, scoring='roc_auc'),
+        'multiplicative_auc': cross_val_score(multiplicative_model, X_multiplicative, labels, cv=5, scoring='roc_auc'),
+        'feature_importance': analyze_feature_importance(multiplicative_model.fit(X_multiplicative, labels))
     }
 ```
 
@@ -175,36 +204,285 @@ def train_implementation_predictor(historical_data):
 Adapting the knowledge graph path traversal approach from Dedhia et al. (2025), we generate and analyze "implementation paths" that trace theory-to-practice transfer:
 
 ```python
-def generate_implementation_paths(papers, implementations):
-    """Generate paths showing how theory transforms to practice"""
+import networkx as nx
+from typing import List, Dict, Tuple, Any
+import numpy as np
+from collections import defaultdict
+
+class ImplementationPathAnalyzer:
+    """Knowledge graph-based path analysis for theory-to-practice transfer"""
     
-    paths = []
-    for paper, impl in match_pairs(papers, implementations):
-        # Define path nodes
-        path = {
-            'start': paper.abstract,
-            'nodes': [],
-            'end': impl.code,
-            'success': impl.stars > 10
+    def __init__(self):
+        self.graph = nx.DiGraph()
+        self.node_types = ['theory', 'algorithm', 'demonstration', 'reference', 'implementation']
+        self.edge_weights = self._initialize_edge_weights()
+        
+    def _initialize_edge_weights(self) -> Dict[Tuple[str, str], float]:
+        """Define transition probabilities between node types"""
+        return {
+            ('theory', 'algorithm'): 0.8,
+            ('theory', 'demonstration'): 0.6,
+            ('algorithm', 'demonstration'): 0.9,
+            ('algorithm', 'reference'): 0.7,
+            ('demonstration', 'reference'): 0.8,
+            ('demonstration', 'implementation'): 0.7,
+            ('reference', 'implementation'): 0.9,
+            ('theory', 'implementation'): 0.3,  # Direct theory->impl is harder
+        }
+    
+    def build_knowledge_graph(self, papers: List[Dict], implementations: List[Dict]):
+        """Construct knowledge graph from papers and implementations"""
+        
+        # Add paper nodes with their content elements
+        for paper in papers:
+            paper_id = paper['id']
+            
+            # Add theory node
+            if paper.get('has_math'):
+                self.graph.add_node(f"{paper_id}_theory", 
+                                  type='theory',
+                                  content=paper.get('math_formulas', ''),
+                                  paper_id=paper_id)
+            
+            # Add algorithm node
+            if paper.get('has_pseudocode'):
+                self.graph.add_node(f"{paper_id}_algorithm",
+                                  type='algorithm', 
+                                  content=paper.get('pseudocode', ''),
+                                  paper_id=paper_id)
+            
+            # Add demonstration node
+            if paper.get('has_examples'):
+                self.graph.add_node(f"{paper_id}_demonstration",
+                                  type='demonstration',
+                                  content=paper.get('examples', ''),
+                                  paper_id=paper_id)
+            
+            # Add reference implementation node
+            if paper.get('has_code'):
+                self.graph.add_node(f"{paper_id}_reference",
+                                  type='reference',
+                                  content=paper.get('code_snippets', ''),
+                                  paper_id=paper_id)
+        
+        # Add implementation nodes
+        for impl in implementations:
+            self.graph.add_node(f"impl_{impl['id']}",
+                              type='implementation',
+                              content=impl.get('code', ''),
+                              success_metric=impl.get('stars', 0))
+        
+        # Connect nodes based on semantic similarity and type transitions
+        self._connect_nodes()
+    
+    def _connect_nodes(self):
+        """Create edges between nodes based on content similarity and type transitions"""
+        nodes = list(self.graph.nodes(data=True))
+        
+        for i, (node1, data1) in enumerate(nodes):
+            for j, (node2, data2) in enumerate(nodes[i+1:], i+1):
+                # Check if transition is allowed
+                type1, type2 = data1['type'], data2['type']
+                if (type1, type2) in self.edge_weights:
+                    # Calculate semantic similarity
+                    similarity = self._calculate_similarity(data1['content'], data2['content'])
+                    
+                    # Add edge if similarity exceeds threshold
+                    if similarity > 0.5:
+                        weight = self.edge_weights[(type1, type2)] * similarity
+                        self.graph.add_edge(node1, node2, weight=weight)
+    
+    def _calculate_similarity(self, content1: str, content2: str) -> float:
+        """Calculate semantic similarity between content elements"""
+        # Simplified similarity - in practice use embeddings
+        common_terms = len(set(content1.split()) & set(content2.split()))
+        total_terms = len(set(content1.split()) | set(content2.split()))
+        return common_terms / total_terms if total_terms > 0 else 0
+    
+    def generate_implementation_paths(self, papers: List[Dict], implementations: List[Dict]) -> List[Dict]:
+        """Generate and analyze paths from theory to implementation"""
+        
+        # Build the knowledge graph
+        self.build_knowledge_graph(papers, implementations)
+        
+        paths = []
+        
+        # For each paper-implementation pair
+        for paper, impl in self.match_pairs(papers, implementations):
+            paper_nodes = [n for n, d in self.graph.nodes(data=True) 
+                          if d.get('paper_id') == paper['id']]
+            impl_node = f"impl_{impl['id']}"
+            
+            # Find all paths from paper nodes to implementation
+            all_paths = []
+            for start_node in paper_nodes:
+                try:
+                    # Use shortest path weighted by transition probabilities
+                    path = nx.shortest_path(self.graph, start_node, impl_node, weight='weight')
+                    path_data = self._analyze_path(path, impl)
+                    all_paths.append(path_data)
+                except nx.NetworkXNoPath:
+                    continue
+            
+            if all_paths:
+                # Select best path based on multiple criteria
+                best_path = max(all_paths, key=lambda p: p['quality_score'])
+                paths.append(best_path)
+        
+        return paths
+    
+    def _analyze_path(self, path: List[str], implementation: Dict) -> Dict:
+        """Analyze a single path for quality metrics"""
+        
+        nodes_data = [self.graph.nodes[node] for node in path]
+        edges = [(path[i], path[i+1]) for i in range(len(path)-1)]
+        
+        # Calculate path metrics
+        path_data = {
+            'nodes': path,
+            'node_types': [n['type'] for n in nodes_data],
+            'length': len(path),
+            'success': implementation.get('stars', 0) > 10,
+            
+            # Path completeness: how many node types are covered
+            'completeness': len(set(n['type'] for n in nodes_data)) / len(self.node_types),
+            
+            # Path coherence: average edge weight (transition probability * similarity)
+            'coherence': np.mean([self.graph.edges[e]['weight'] for e in edges]),
+            
+            # Context richness: amount of content in path nodes
+            'context_richness': sum(len(n.get('content', '')) for n in nodes_data),
+            
+            # Direct vs indirect: whether path takes shortcuts
+            'directness': 1.0 / len(path),
         }
         
-        # Trace through context elements
-        if paper.has_math:
-            path['nodes'].append(('theory', paper.math_formulas))
-        if paper.has_pseudocode:
-            path['nodes'].append(('algorithm', paper.pseudocode))
-        if paper.has_examples:
-            path['nodes'].append(('demonstration', paper.examples))
-        if paper.has_code:
-            path['nodes'].append(('reference', paper.code_snippets))
-            
-        # Calculate path completion rate
-        path['completion'] = len(path['nodes']) / 4.0
-        path['context_score'] = calculate_context_richness(path['nodes'])
+        # Calculate overall quality score
+        path_data['quality_score'] = (
+            0.3 * path_data['completeness'] +
+            0.3 * path_data['coherence'] +
+            0.2 * path_data['context_richness'] / 1000 +  # Normalize
+            0.2 * path_data['directness']
+        )
         
-        paths.append(path)
+        return path_data
     
-    return paths
+    def match_pairs(self, papers: List[Dict], implementations: List[Dict]) -> List[Tuple[Dict, Dict]]:
+        """Match papers to their implementations based on metadata"""
+        pairs = []
+        
+        for paper in papers:
+            # Find implementations that cite or reference this paper
+            matching_impls = [
+                impl for impl in implementations
+                if paper['id'] in impl.get('references', []) or
+                paper['title'].lower() in impl.get('description', '').lower()
+            ]
+            
+            for impl in matching_impls:
+                pairs.append((paper, impl))
+        
+        return pairs
+    
+    def analyze_path_patterns(self, paths: List[Dict]) -> Dict[str, Any]:
+        """Analyze patterns across all implementation paths"""
+        
+        successful_paths = [p for p in paths if p['success']]
+        failed_paths = [p for p in paths if not p['success']]
+        
+        analysis = {
+            'total_paths': len(paths),
+            'success_rate': len(successful_paths) / len(paths) if paths else 0,
+            
+            # Compare metrics between successful and failed paths
+            'successful_patterns': {
+                'avg_length': np.mean([p['length'] for p in successful_paths]) if successful_paths else 0,
+                'avg_completeness': np.mean([p['completeness'] for p in successful_paths]) if successful_paths else 0,
+                'avg_coherence': np.mean([p['coherence'] for p in successful_paths]) if successful_paths else 0,
+                'common_sequences': self._find_common_sequences(successful_paths),
+            },
+            
+            'failed_patterns': {
+                'avg_length': np.mean([p['length'] for p in failed_paths]) if failed_paths else 0,
+                'avg_completeness': np.mean([p['completeness'] for p in failed_paths]) if failed_paths else 0,
+                'avg_coherence': np.mean([p['coherence'] for p in failed_paths]) if failed_paths else 0,
+                'missing_elements': self._find_missing_elements(failed_paths),
+            },
+            
+            # Identify critical transitions
+            'critical_transitions': self._identify_critical_transitions(paths),
+        }
+        
+        return analysis
+    
+    def _find_common_sequences(self, paths: List[Dict]) -> List[Tuple[str, ...]]:
+        """Find common node type sequences in paths"""
+        sequences = defaultdict(int)
+        
+        for path in paths:
+            types = tuple(path['node_types'])
+            # Check all subsequences of length 2-3
+            for length in [2, 3]:
+                for i in range(len(types) - length + 1):
+                    subseq = types[i:i+length]
+                    sequences[subseq] += 1
+        
+        # Return most common sequences
+        return sorted(sequences.items(), key=lambda x: x[1], reverse=True)[:5]
+    
+    def _find_missing_elements(self, paths: List[Dict]) -> List[str]:
+        """Identify which node types are commonly missing in failed paths"""
+        all_types = set(self.node_types)
+        missing_counts = defaultdict(int)
+        
+        for path in paths:
+            present_types = set(path['node_types'])
+            for missing in all_types - present_types:
+                missing_counts[missing] += 1
+        
+        return sorted(missing_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    def _identify_critical_transitions(self, paths: List[Dict]) -> List[Tuple[str, str, float]]:
+        """Identify transitions that correlate with success"""
+        transition_success = defaultdict(lambda: {'count': 0, 'success': 0})
+        
+        for path in paths:
+            types = path['node_types']
+            for i in range(len(types) - 1):
+                transition = (types[i], types[i+1])
+                transition_success[transition]['count'] += 1
+                if path['success']:
+                    transition_success[transition]['success'] += 1
+        
+        # Calculate success rates for each transition
+        critical = []
+        for transition, stats in transition_success.items():
+            if stats['count'] >= 5:  # Minimum sample size
+                success_rate = stats['success'] / stats['count']
+                critical.append((transition[0], transition[1], success_rate))
+        
+        return sorted(critical, key=lambda x: x[2], reverse=True)
+
+# Usage example
+def analyze_implementation_paths(papers, implementations):
+    """Main function to perform path analysis"""
+    analyzer = ImplementationPathAnalyzer()
+    
+    # Generate paths
+    paths = analyzer.generate_implementation_paths(papers, implementations)
+    
+    # Analyze patterns
+    patterns = analyzer.analyze_path_patterns(paths)
+    
+    return {
+        'paths': paths,
+        'patterns': patterns,
+        'graph_stats': {
+            'nodes': analyzer.graph.number_of_nodes(),
+            'edges': analyzer.graph.number_of_edges(),
+            'density': nx.density(analyzer.graph),
+        }
+    }
 ```
 
 **Path-based Metrics:**
@@ -541,10 +819,12 @@ def compare_models(data):
     multiplicative_model = smf.logit(multiplicative_formula, data).fit()
     
     # Model comparison
+    likelihood_ratio = -2 * (additive_model.llf - multiplicative_model.llf)
+
     results = {
         'additive_aic': additive_model.aic,
         'multiplicative_aic': multiplicative_model.aic,
-        'likelihood_ratio': -2 * (additive_model.llf - multiplicative_model.llf),
+        'likelihood_ratio': likelihood_ratio,
         'p_value': chi2.sf(likelihood_ratio, df=3)
     }
     

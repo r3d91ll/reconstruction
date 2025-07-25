@@ -210,7 +210,6 @@ def main():
         
         # Process all-vs-all on GPU
         logger.info("Computing all-vs-all similarities on GPU...")
-        embeddings = np.array([chunk['embedding'] for chunk in all_chunks])
         
         # Split computation into manageable chunks to avoid OOM
         n_chunks = len(all_chunks)

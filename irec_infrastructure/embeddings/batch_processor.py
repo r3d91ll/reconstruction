@@ -159,6 +159,7 @@ class BatchEmbeddingProcessor:
                             embeddings = self.jina_client.encode_batch(chunk_batch)
                         else:
                             # Placeholder for local model
+                            logger.warning("No Jina client configured - using random placeholder embeddings")
                             embeddings = np.random.randn(len(chunk_batch), 768)
                         
                         all_embeddings.extend(embeddings)

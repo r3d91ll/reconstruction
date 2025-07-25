@@ -47,6 +47,11 @@ class ArxivLoader:
             base_path: Base directory containing arxiv_data/pdf and arxiv_data/metadata
         """
         self.base_path = Path(base_path)
+        
+        # Validate base path exists
+        if not self.base_path.exists():
+            raise ValueError(f"Base path does not exist: {self.base_path}")
+        
         self.pdf_dir = self.base_path / "pdf"
         self.metadata_dir = self.base_path / "metadata"
         

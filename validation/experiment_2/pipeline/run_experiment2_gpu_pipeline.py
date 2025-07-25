@@ -159,13 +159,19 @@ def run_gpu_pipeline(num_papers=2000):
                 )
             else:
                 # Run other scripts normally
+                # Create filtered environment with only necessary variables
+                filtered_env = {
+                    k: v for k, v in os.environ.items()
+                    if k.startswith(('EXP2_', 'CUDA_', 'PATH', 'PYTHONPATH'))
+                }
+
                 with open(step_log_file, 'w') as step_log:
                     result = subprocess.run(
                         [sys.executable, script_path],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.STDOUT,
                         text=True,
-                        env=os.environ.copy()  # Pass environment variables
+                        env=filtered_env
                     )
                     
                     # Write output to step log
@@ -238,8 +244,9 @@ def run_gpu_pipeline(num_papers=2000):
         "gpu_count": gpu_count,
         "total_gpu_memory_gb": total_gpu_memory,
         "pipeline_duration_seconds": total_duration,
+        "pipeline_duration_seconds": total_duration,
         "papers_processed": num_papers,
-        "papers_per_second": num_papers / total_duration,
+        "papers_per_second": num_papers / total_duration if total_duration > 0 else 0,
         "timestamp": datetime.now().isoformat(),
         "step_results": step_results
     }

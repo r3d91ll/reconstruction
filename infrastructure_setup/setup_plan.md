@@ -45,7 +45,7 @@ python process_documents.py \
 python generate_all_embeddings.py \
     --use-gpu \
     --batch-size 32 \
-    --model jina-v4
+    --model jina-embeddings-v4
 ```
 
 **Generates:**

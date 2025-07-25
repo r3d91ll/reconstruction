@@ -246,7 +246,8 @@ def create_irec_schema(
                     )
                 logging.info(f"  Added {index_config['type']} index on: {index_config['fields']}")
             except Exception as e:
-                logging.warning(f"  Index creation warning: {e}")
+                logging.warning(f"  Index creation failed: {e}")
+                raise e  # Re-raise to fail the schema creation process
     
     # Create graph for relationships
     logging.info("Creating graph: irec_knowledge_graph")
@@ -423,10 +424,7 @@ if __name__ == "__main__":
     )
     
     # Get password
-    if args.verify_only:
-        password = getpass.getpass(f"Enter password for {args.username}: ")
-    else:
-        password = getpass.getpass(f"Enter password for {args.username}: ")
+    password = getpass.getpass(f"Enter password for {args.username}: ")
     
     if args.verify_only:
         # Just verify existing schema

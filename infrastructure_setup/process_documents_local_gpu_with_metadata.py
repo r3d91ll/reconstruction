@@ -137,7 +137,7 @@ class MetadataAwareProcessor:
                     'chunk_id': f"{arxiv_id}_chunk_{i}",
                     'chunk_index': i,
                     'text': chunk_text,
-                    'embedding': embedding,  # Already a list
+                    'embedding': embedding,  # Single embedding vector for this chunk
                     'tokens': len(chunk_text.split()),  # Rough estimate
                     'arxiv_id': arxiv_id  # Link back to document
                 })
@@ -306,8 +306,13 @@ def main():
     
     args = parser.parse_args()
     
-    # Get PDF files
+    # Validate input directory exists
     input_dir = Path(args.input_dir)
+    if not input_dir.exists():
+        logger.error(f"Input directory does not exist: {input_dir}")
+        parser.error(f"Input directory does not exist: {input_dir}")
+    
+    # Get PDF files
     pdf_files = list(input_dir.glob("*.pdf"))
     
     if args.num_docs:

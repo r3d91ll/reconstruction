@@ -21,6 +21,36 @@ With TRUE late chunking:
 - Embeddings are more accurate because they're generated with full document understanding
 - This is what enables the "context safety" that makes Information Reconstructionism work
 
+## Prerequisites
+
+### Set JINA_API_KEY Environment Variable
+
+You must set the JINA_API_KEY environment variable before proceeding. This key is required for accessing the Jina API.
+
+**Set the key:**
+```bash
+export JINA_API_KEY="your-jina-api-key-here"
+```
+
+**Add to your shell profile (optional, for persistence):**
+```bash
+echo 'export JINA_API_KEY="your-jina-api-key-here"' >> ~/.bashrc
+# or for zsh users:
+echo 'export JINA_API_KEY="your-jina-api-key-here"' >> ~/.zshrc
+```
+
+**Validate the key is set:**
+```bash
+# This script will check if JINA_API_KEY is defined
+if [ -z "$JINA_API_KEY" ]; then
+    echo "ERROR: JINA_API_KEY environment variable is not set!"
+    echo "Please set it using: export JINA_API_KEY='your-key-here'"
+    exit 1
+else
+    echo "✓ JINA_API_KEY is set"
+fi
+```
+
 ## Phase 0: Infrastructure Setup with TRUE Late Chunking
 
 ### 0.1 Database Schema Creation (30 minutes)
@@ -118,10 +148,34 @@ Should show:
 
 ## Cost Estimate
 
-Jina API pricing (approximate):
+Jina API pricing (July 2025):
+
+**Free Tier:**
+- 1M tokens/month free
+- Good for testing and small experiments
+
+**Starter Plan ($50/month):**
+- 10,000 queries/month
+- ~50M tokens/month
+- Best for our use case
+
+**Professional Plan ($500/month):**
+- 100,000 queries/month
+- ~500M tokens/month
+- For production workloads
+
+**Enterprise Plan (Custom pricing):**
+- Unlimited queries
+- SLA guarantees
+- Custom support
+
+**Our workload estimate:**
 - 1960 documents × ~5000 tokens/doc average = ~10M tokens
-- Cost varies by plan, check current Jina pricing
+- Approximately 2000 queries (one per document)
+- **Cost: ~20% of Starter Plan capacity (~$10/month equivalent)**
 - Worth it for TRUE semantic chunking
+
+For latest pricing, see: https://jina.ai/pricing
 
 ## Next Steps
 
