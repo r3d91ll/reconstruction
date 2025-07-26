@@ -29,10 +29,16 @@ class PipelineLauncher:
         
     def launch_pipeline(self, args):
         """Launch the processing pipeline in background."""
+        # Determine which pipeline to use
+        if args.production:
+            script_name = "setup/process_abstracts_production.py"
+        else:
+            script_name = "setup/process_abstracts_dual_gpu.py"
+            
         # Build command
         cmd = [
             sys.executable,
-            "setup/process_abstracts_dual_gpu.py",
+            script_name,
             "--db-name", args.db_name,
             "--db-host", args.db_host,
             "--batch-size", str(args.batch_size),
@@ -225,6 +231,8 @@ def main():
                         help='Directory for checkpoints')
     parser.add_argument('--resume', action='store_true',
                         help='Resume from checkpoint')
+    parser.add_argument('--production', action='store_true',
+                        help='Use production pipeline with advanced features')
     
     args = parser.parse_args()
     
