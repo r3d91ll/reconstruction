@@ -11,7 +11,8 @@ import json
 import logging
 from dataclasses import dataclass
 
-from ..embeddings import JinaClient, JinaConfig, LateChucker, BatchEmbeddingProcessor
+# from ..embeddings import LocalJinaGPU, LocalJinaConfig, BatchEmbeddingProcessor
+# Temporarily disabled due to corrupted file
 from .arxiv_loader import ArxivLoader
 
 # Note: GPUConfig and ProgressTracker will be added when those modules are implemented
