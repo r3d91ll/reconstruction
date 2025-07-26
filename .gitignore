@@ -48,7 +48,7 @@ logs/
 *.ipynb
 
 # Model files
-models/
+#models/
 *.pt
 *.pth
 *.onnx
