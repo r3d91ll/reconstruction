@@ -100,6 +100,7 @@ class PipelineConfig:
     enable_monitoring: bool = True
     monitor_interval: float = 5.0
     low_util_threshold: float = 50.0
+    low_util_alert_threshold: int = 3  # Number of consecutive low readings before alert
 
 
 class GPUWorker(mp.Process):
@@ -486,7 +487,7 @@ class GPUUtilizationMonitor(Thread):
                         # Track low utilization
                         if util.gpu < self.config.low_util_threshold:
                             self.low_util_count[i] += 1
-                            if self.low_util_count[i] > 3:  # Alert after 3 consecutive low readings
+                            if self.low_util_count[i] > self.config.low_util_alert_threshold:
                                 logger.warning(
                                     f"GPU {i} utilization consistently low: {util.gpu}% "
                                     f"(Queue size: {self.gpu_queue.qsize()})"
@@ -1053,6 +1054,11 @@ def main():
         metadata_files = sorted(metadata_dir.glob("*.json"))
         
         if args.count:
+            if args.count > len(metadata_files):
+                logger.warning(
+                    f"Requested count ({args.count}) exceeds available files ({len(metadata_files)}). "
+                    f"Processing all {len(metadata_files)} available files."
+                )
             metadata_files = metadata_files[:args.count]
             
         print(f"\nFound {len(metadata_files)} metadata files")
