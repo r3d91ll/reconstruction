@@ -21,16 +21,13 @@ This appendix provides comprehensive methodology for testing the hypothesis that
 
 Null: Context contributes additively to information transfer
 
-```
-Transfer_rate = β₀ + β₁·WHERE + β₂·WHAT + β₃·CONVEYANCE + β₄·Context
-```
+$$\text{Transfer\_rate} = \beta_0 + \beta_1 \cdot \text{WHERE} + \beta_2 \cdot \text{WHAT} + \beta_3 \cdot \text{CONVEYANCE} + \beta_4 \cdot \text{Context}$$
 
 Alternative: Context acts as exponential amplifier
 
-```
-Transfer_rate = WHERE × WHAT × (BaseConveyance × Context^α) × TIME
-where α > 1 (empirically discovered, NOT predetermined)
-```
+$$\text{Transfer\_rate} = \text{WHERE} \times \text{WHAT} \times (\text{BaseConveyance} \times \text{Context}^\alpha) \times \text{TIME}$$
+
+where $\alpha > 1$ (empirically discovered, NOT predetermined)
 
 **Experimental Design (Enhanced with Bottom-up Methodology):**
 

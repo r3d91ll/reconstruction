@@ -20,7 +20,6 @@ from typing import Dict, List, Optional, Tuple, Any
 
 import numpy as np
 from tqdm import tqdm
-import lmdb
 from arango import ArangoClient
 
 # Set GPU visibility BEFORE any imports
@@ -93,43 +92,50 @@ class Config:
 # No chunking needed for abstracts - they fit in single embeddings
 
 class CheckpointManager:
-    """LMDB-based checkpoint management"""
+    """File-based checkpoint management for multi-process safety"""
     
     def __init__(self, checkpoint_dir: str):
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        self.processed_file = self.checkpoint_dir / 'processed_ids.txt'
+        self._lock = threading.Lock()
         
-        self.env = lmdb.open(
-            str(self.checkpoint_dir / 'checkpoints.lmdb'),
-            map_size=1024 * 1024 * 1024,  # 1GB
-            create=True
-        )
+        # Load existing processed IDs
+        self.processed_ids = set()
+        if self.processed_file.exists():
+            with open(self.processed_file, 'r') as f:
+                self.processed_ids = set(line.strip() for line in f if line.strip())
         
     def is_processed(self, arxiv_id: str) -> bool:
         """Check if document was processed"""
-        with self.env.begin() as txn:
-            return txn.get(arxiv_id.encode()) is not None
+        with self._lock:
+            return arxiv_id in self.processed_ids
             
     def mark_processed(self, arxiv_id: str):
         """Mark document as processed"""
-        with self.env.begin(write=True) as txn:
-            txn.put(arxiv_id.encode(), b'1')
+        with self._lock:
+            if arxiv_id not in self.processed_ids:
+                self.processed_ids.add(arxiv_id)
+                with open(self.processed_file, 'a') as f:
+                    f.write(f"{arxiv_id}\n")
             
     def get_processed_count(self) -> int:
         """Get total processed documents"""
-        with self.env.begin() as txn:
-            return txn.stat()['entries']
+        with self._lock:
+            return len(self.processed_ids)
             
     def clear(self):
         """Clear all checkpoints"""
-        with self.env.begin(write=True) as txn:
-            txn.drop()
+        with self._lock:
+            self.processed_ids.clear()
+            if self.processed_file.exists():
+                self.processed_file.unlink()
 
 def metadata_worker_process(
     worker_id: int,
     metadata_files: List[Path],
     metadata_queue: mp.Queue,
-    checkpoint_manager: CheckpointManager,
+    checkpoint_dir: str,
     config: Config
 ):
     """Process metadata files and extract abstracts"""
@@ -146,7 +152,8 @@ def metadata_worker_process(
                 continue
                 
             # Skip if already processed
-            if config.resume and checkpoint_manager.is_processed(arxiv_id):
+            checkpoint_file = Path(checkpoint_dir) / 'processed' / f"{arxiv_id}.done"
+            if config.resume and checkpoint_file.exists():
                 continue
                 
             abstract = metadata.get('abstract', '').strip()
@@ -185,7 +192,11 @@ class JinaEmbedder:
         
         logger.info(f"Loading Jina model on {device}...")
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
-        self.model = AutoModel.from_pretrained(self.model_name, trust_remote_code=True)
+        self.model = AutoModel.from_pretrained(
+            self.model_name, 
+            trust_remote_code=True,
+            torch_dtype=torch.float16  # Use FP16 for RTX A6000
+        )
         
         if device == 'cuda':
             self.model = self.model.cuda()
@@ -193,7 +204,7 @@ class JinaEmbedder:
         
         logger.info("Jina model loaded successfully")
         
-    def embed_text(self, text: str, task: str = 'retrieval.passage') -> np.ndarray:
+    def embed_text(self, text: str, task: str = 'retrieval') -> np.ndarray:
         """Generate single embedding for text"""
         
         inputs = self.tokenizer(text, return_tensors='pt', padding=True, truncation=True, max_length=8192)
@@ -202,8 +213,14 @@ class JinaEmbedder:
         with torch.no_grad():
             outputs = self.model(**inputs, task_label=task)
             
-        # Get pooled embedding
-        embedding = outputs.last_hidden_state.mean(dim=1)[0]  # Average pooling
+        # Get single-vector embedding (Jina v4 uses task-specific outputs)
+        if hasattr(outputs, 'single_vec_emb'):
+            # For single document embedding
+            embedding = outputs.single_vec_emb[0]
+        else:
+            # Fallback to mean pooling
+            embedding = outputs.last_hidden_state.mean(dim=1)[0]
+            
         return embedding.cpu().numpy()
 
 def embedding_worker_process(
@@ -211,6 +228,7 @@ def embedding_worker_process(
     embedding_queue: mp.Queue,
     db_queue: mp.Queue,
     stop_event: mp.Event,
+    checkpoint_dir: str,
     config: Config
 ):
     """GPU worker for generating embeddings"""
@@ -232,7 +250,10 @@ def embedding_worker_process(
                 try:
                     # Generate single embedding for abstract
                     abstract = doc['abstract']
-                    embedding = embedder.embed_text(abstract, task='retrieval.passage')
+                    if not abstract or len(abstract.strip()) < 10:
+                        logger.warning(f"Skipping document {doc['arxiv_id']} - abstract too short")
+                        continue
+                    embedding = embedder.embed_text(abstract, task='retrieval')
                     
                     # Prepare records for database
                     timestamp = datetime.utcnow().isoformat()
@@ -248,22 +269,20 @@ def embedding_worker_process(
                         'processed_at': timestamp
                     }
                     
-                    # Document record with abstract
-                    document_record = {
+                    # Embedding record
+                    embedding_record = {
                         '_key': doc['arxiv_id'],
                         'arxiv_id': doc['arxiv_id'],
-                        'content': abstract,
-                        'doc_type': 'abstract',
+                        'embedding': embedding.tolist(),
                         'processed_at': timestamp
                     }
                     
-                    # Single chunk record for entire abstract
-                    chunk_record = {
-                        '_key': f"{doc['arxiv_id']}_abstract",
+                    # Abstract record (markdown format)
+                    abstract_record = {
+                        '_key': doc['arxiv_id'],
                         'arxiv_id': doc['arxiv_id'],
-                        'chunk_index': 0,
-                        'chunk_text': abstract,
-                        'embedding': embedding.tolist(),
+                        'abstract_text': abstract,
+                        'abstract_markdown': f"## Abstract\n\n{abstract}",
                         'processed_at': timestamp
                     }
                     
@@ -273,13 +292,18 @@ def embedding_worker_process(
                         'record': metadata_record
                     })
                     db_queue.put({
-                        'type': 'documents',
-                        'record': document_record
+                        'type': 'embeddings',
+                        'record': embedding_record
                     })
                     db_queue.put({
-                        'type': 'chunks',
-                        'record': chunk_record
+                        'type': 'abstracts',
+                        'record': abstract_record
                     })
+                    
+                    # Mark as processed in checkpoint
+                    checkpoint_file = Path(checkpoint_dir) / 'processed' / f"{doc['arxiv_id']}.done"
+                    checkpoint_file.parent.mkdir(parents=True, exist_ok=True)
+                    checkpoint_file.touch()
                         
                 except Exception as e:
                     logger.error(f"Error processing document {doc.get('arxiv_id', 'unknown')}: {e}")
@@ -301,8 +325,8 @@ class DatabaseWriter(threading.Thread):
         # Batch buffers for each collection
         self.batch_buffers = {
             'metadata': [],
-            'documents': [],
-            'chunks': []
+            'embeddings': [],
+            'abstracts': []
         }
         self.batch_size = 100
         
@@ -320,8 +344,8 @@ class DatabaseWriter(threading.Thread):
         # Get collections
         self.collections = {
             'metadata': self.db.collection('metadata'),
-            'documents': self.db.collection('documents'),
-            'chunks': self.db.collection('chunks')
+            'embeddings': self.db.collection('embeddings'),
+            'abstracts': self.db.collection('abstracts')
         }
         
     def run(self):
@@ -375,11 +399,14 @@ class AbstractPipeline:
     
     def __init__(self, config: Config):
         self.config = config
-        self.checkpoint_manager = CheckpointManager(config.checkpoint_dir)
         
         if config.clean_start:
             logger.info("Clean start - clearing checkpoints")
-            self.checkpoint_manager.clear()
+            import shutil
+            checkpoint_path = Path(config.checkpoint_dir)
+            if checkpoint_path.exists():
+                shutil.rmtree(checkpoint_path)
+            checkpoint_path.mkdir(parents=True, exist_ok=True)
             
     def setup_database(self) -> bool:
         """Setup database and collections"""
@@ -394,7 +421,7 @@ class AbstractPipeline:
             db = client.db(self.config.db_name, username=self.config.db_username, password=self.config.db_password)
             
             # Create all three collections
-            collections_to_create = ['metadata', 'documents', 'chunks']
+            collections_to_create = ['metadata', 'embeddings', 'abstracts']
             
             for collection_name in collections_to_create:
                 if not db.has_collection(collection_name):
@@ -406,11 +433,10 @@ class AbstractPipeline:
                         collection.add_hash_index(fields=['arxiv_id'], unique=True)
                         collection.add_persistent_index(fields=['categories[*]'])
                         collection.add_persistent_index(fields=['published'])
-                    elif collection_name == 'documents':
+                    elif collection_name == 'embeddings':
                         collection.add_hash_index(fields=['arxiv_id'], unique=True)
-                    elif collection_name == 'chunks':
-                        collection.add_hash_index(fields=['arxiv_id'])
-                        collection.add_persistent_index(fields=['chunk_index'])
+                    elif collection_name == 'abstracts':
+                        collection.add_hash_index(fields=['arxiv_id'], unique=True)
                         
             return True
             
@@ -458,7 +484,7 @@ class AbstractPipeline:
             
             p = mp.Process(
                 target=metadata_worker_process,
-                args=(i, worker_files, metadata_queue, self.checkpoint_manager, self.config)
+                args=(i, worker_files, metadata_queue, self.config.checkpoint_dir, self.config)
             )
             p.start()
             metadata_processes.append(p)
@@ -470,7 +496,7 @@ class AbstractPipeline:
         for i in range(self.config.embedding_workers):
             p = mp.Process(
                 target=embedding_worker_process,
-                args=(self.config.embedding_gpu, embedding_queue, db_queue, stop_event, self.config)
+                args=(self.config.embedding_gpu, embedding_queue, db_queue, stop_event, self.config.checkpoint_dir, self.config)
             )
             p.start()
             embedding_processes.append(p)
@@ -498,7 +524,9 @@ class AbstractPipeline:
         while any(p.is_alive() for p in metadata_processes + embedding_processes):
             time.sleep(10)
             
-            current_count = self.checkpoint_manager.get_processed_count()
+            # Count processed files
+            processed_dir = Path(self.config.checkpoint_dir) / 'processed'
+            current_count = len(list(processed_dir.glob('*.done'))) if processed_dir.exists() else 0
             rate = (current_count - last_count) / 10.0
             total_rate = current_count / (time.time() - start_time)
             
@@ -528,7 +556,9 @@ class AbstractPipeline:
         db_writer.join()
         
         elapsed = time.time() - start_time
-        final_count = self.checkpoint_manager.get_processed_count()
+        # Final count
+        processed_dir = Path(self.config.checkpoint_dir) / 'processed'
+        final_count = len(list(processed_dir.glob('*.done'))) if processed_dir.exists() else 0
         
         logger.info(f"Pipeline complete!")
         logger.info(f"Processed {final_count} abstracts in {elapsed/60:.1f} minutes")
