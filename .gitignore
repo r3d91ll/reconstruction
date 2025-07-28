@@ -68,3 +68,4 @@ validation/data/raw_pdfs/*
 infrastructure_setup/archive_tests/
 *.mdb
 
+checkpoints/*
