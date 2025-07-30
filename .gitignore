@@ -70,3 +70,4 @@ infrastructure_setup/archive_tests/
 
 infrastructure/setup/checkpoints/*
 checkpoints/
+infrastructure/setup/orig-process_abstracts_single_collection.py
