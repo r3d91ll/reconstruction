@@ -1,4 +1,4 @@
-# CodeRabbit Configuration for PCM-Ops Tools
+# CodeRabbit Configuration for Information Reconstructionism
 version: "1"
 language: "en-US"
 early_access: false
@@ -26,44 +26,48 @@ reviews:
 
 # Path-specific instructions
 path_instructions:
-  - path: "backend/**"
+  - path: "paper/**"
     instructions: |
-      - Focus on FastAPI best practices and async patterns
-      - Check for proper error handling and validation
-      - Ensure database operations use proper transactions
-      - Verify API responses follow consistent schema patterns
-      - Check for proper use of Pydantic models
-      - Ensure SQLAlchemy 2.0 patterns are followed
+      - Focus on mathematical rigor and clarity
+      - Ensure citations follow academic standards
+      - Verify mathematical proofs are well-structured
+      - Check for consistency in terminology
+      - Validate equations and formulas
+      - Ensure theoretical claims are properly supported
       
-  - path: "backend/providers/aws/**"
+  - path: "infrastructure/setup/**"
     instructions: |
-      - Verify AWS SDK usage follows best practices
-      - Check for proper credential handling (no hardcoded credentials)
-      - Ensure error handling for AWS API limits and throttling
-      - Validate IAM permission requirements are documented
-      - Check for proper use of boto3 sessions and clients
-      - Verify SSM command execution is secure
+      - Check for proper GPU resource management
+      - Verify ArangoDB connection patterns and transactions
+      - Ensure proper error handling for arXiv data processing
+      - Validate batch processing efficiency
+      - Check for proper checkpoint and recovery mechanisms
+      - Ensure atomic transaction integrity
       
-  - path: "backend/web/**"
+  - path: "infrastructure/irec_infrastructure/**"
     instructions: |
-      - Check for proper Jinja2 template security
-      - Verify CSRF protection is in place
-      - Ensure proper session management
-      - Check for XSS vulnerabilities
+      - Verify proper abstraction and modularity
+      - Check for proper async/await patterns
+      - Ensure GPU memory management is optimal
+      - Validate embedding batch sizes and efficiency
+      - Check for proper error propagation
+      - Ensure proper logging and monitoring
       
-  - path: "frontend/**"
+  - path: "experiments/**"
     instructions: |
-      - Check for proper Flask blueprint organization
-      - Verify JavaScript follows modern ES6+ patterns
-      - Ensure AJAX calls have proper error handling
-      - Check for secure handling of file uploads
+      - Ensure reproducibility of experiments
+      - Check for proper data handling and cleanup
+      - Verify statistical validity of results
+      - Ensure proper separation of concerns
+      - Validate experiment configurations
       
-  - path: "tests/**"
+  - path: "*.py"
     instructions: |
-      - Ensure comprehensive test coverage
-      - Check for proper mocking of external services
-      - Verify test isolation and cleanup
-      - Ensure async tests use proper patterns
+      - Follow PEP 8 style guidelines
+      - Use type hints where appropriate
+      - Ensure proper docstrings for public functions
+      - Check for proper exception handling
+      - Verify no hardcoded paths or credentials
 
 # Issue Management Configuration
 issue_handling:
@@ -91,11 +95,12 @@ review_checklist:
   - "Tests are included for new functionality"
   - "Documentation is updated"
   - "No hardcoded credentials or secrets"
-  - "Database migrations are included if needed"
-  - "API endpoints have proper authentication"
-  - "Error messages don't expose sensitive information"
-  - "AWS operations have proper error handling"
-  - "Frontend has proper CSRF protection"
+  - "Mathematical equations are properly validated"
+  - "GPU resources are properly managed"
+  - "Database transactions maintain atomicity"
+  - "Batch processing includes proper checkpointing"
+  - "Error messages are informative but secure"
+  - "Experiments are reproducible"
 
 # File patterns to exclude from reviews
 exclude_patterns:
@@ -107,24 +112,28 @@ exclude_patterns:
   - "**/.pytest_cache/**"
   - "**/logs/**"
   - "**/data/**"
-  - "**/instance/**"
   - "**/*.db"
-  - "**/static/vendor/**"
+  - "**/checkpoints/**"
+  - "**/*.done"
+  - "**/*.log"
+  - "**/models/*.pth"
+  - "**/*.mdb"
 
-# Additional instructions for handling your 143 fixes
+# Additional instructions for processing and validation
 batch_processing:
   # Maximum issues to create per review
   max_issues_per_review: 10
   
   # Categorize issues by type
   issue_categories:
-    security: "security-fix"
+    mathematical-rigor: "math-validation"
+    gpu-optimization: "gpu-performance"
+    database-integrity: "db-transactions"
+    experiment-validity: "experiment-reproducibility"
+    theory-consistency: "theory-validation"
     performance: "performance"
     code-quality: "code-quality"
-    best-practices: "best-practices"
     documentation: "documentation"
-    type-safety: "type-safety"
-    error-handling: "error-handling"
 
 # Code quality thresholds
 quality_gates:
@@ -132,10 +141,10 @@ quality_gates:
   min_coverage: 70
   
   # Maximum cyclomatic complexity
-  max_complexity: 10
+  max_complexity: 15
   
-  # Maximum file length
-  max_file_length: 500
+  # Maximum file length (increased for academic papers and pipelines)
+  max_file_length: 1000
   
-  # Maximum function length
-  max_function_length: 50
+  # Maximum function length (increased for complex processing functions)
+  max_function_length: 100
