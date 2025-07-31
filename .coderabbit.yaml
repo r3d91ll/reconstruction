@@ -1,0 +1,141 @@
+# CodeRabbit Configuration for PCM-Ops Tools
+version: "1"
+language: "en-US"
+early_access: false
+
+# Review Settings
+reviews:
+  # Request incremental reviews on every push
+  request_changes_workflow: true
+  
+  # High-level summary of changes
+  high_level_summary: true
+  
+  # Generate poems or creative content (set to false for professional reviews)
+  poem: false
+  
+  # Enable review status checks
+  review_status: true
+  
+  # Collapse generated summary details by default
+  collapse_walkthrough: false
+  
+  # Automatically approve dependency updates
+  auto_review_enabled: true
+  auto_review_drafts: false
+
+# Path-specific instructions
+path_instructions:
+  - path: "backend/**"
+    instructions: |
+      - Focus on FastAPI best practices and async patterns
+      - Check for proper error handling and validation
+      - Ensure database operations use proper transactions
+      - Verify API responses follow consistent schema patterns
+      - Check for proper use of Pydantic models
+      - Ensure SQLAlchemy 2.0 patterns are followed
+      
+  - path: "backend/providers/aws/**"
+    instructions: |
+      - Verify AWS SDK usage follows best practices
+      - Check for proper credential handling (no hardcoded credentials)
+      - Ensure error handling for AWS API limits and throttling
+      - Validate IAM permission requirements are documented
+      - Check for proper use of boto3 sessions and clients
+      - Verify SSM command execution is secure
+      
+  - path: "backend/web/**"
+    instructions: |
+      - Check for proper Jinja2 template security
+      - Verify CSRF protection is in place
+      - Ensure proper session management
+      - Check for XSS vulnerabilities
+      
+  - path: "frontend/**"
+    instructions: |
+      - Check for proper Flask blueprint organization
+      - Verify JavaScript follows modern ES6+ patterns
+      - Ensure AJAX calls have proper error handling
+      - Check for secure handling of file uploads
+      
+  - path: "tests/**"
+    instructions: |
+      - Ensure comprehensive test coverage
+      - Check for proper mocking of external services
+      - Verify test isolation and cleanup
+      - Ensure async tests use proper patterns
+
+# Issue Management Configuration
+issue_handling:
+  # Automatically create issues for critical findings
+  auto_create_issues: true
+  
+  # Issue labels to apply
+  issue_labels:
+    - "coderabbit"
+    - "automated-review"
+  
+  # Group similar issues together
+  group_issues: true
+  
+  # Priority mapping
+  issue_priority:
+    critical: "P0-critical"
+    high: "P1-high"
+    medium: "P2-medium"
+    low: "P3-low"
+
+# Custom review checklist
+review_checklist:
+  - "Code follows project style guidelines"
+  - "Tests are included for new functionality"
+  - "Documentation is updated"
+  - "No hardcoded credentials or secrets"
+  - "Database migrations are included if needed"
+  - "API endpoints have proper authentication"
+  - "Error messages don't expose sensitive information"
+  - "AWS operations have proper error handling"
+  - "Frontend has proper CSRF protection"
+
+# File patterns to exclude from reviews
+exclude_patterns:
+  - "**/*.lock"
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+  - "**/venv/**"
+  - "**/.mypy_cache/**"
+  - "**/.pytest_cache/**"
+  - "**/logs/**"
+  - "**/data/**"
+  - "**/instance/**"
+  - "**/*.db"
+  - "**/static/vendor/**"
+
+# Additional instructions for handling your 143 fixes
+batch_processing:
+  # Maximum issues to create per review
+  max_issues_per_review: 10
+  
+  # Categorize issues by type
+  issue_categories:
+    security: "security-fix"
+    performance: "performance"
+    code-quality: "code-quality"
+    best-practices: "best-practices"
+    documentation: "documentation"
+    type-safety: "type-safety"
+    error-handling: "error-handling"
+
+# Code quality thresholds
+quality_gates:
+  # Minimum code coverage percentage
+  min_coverage: 70
+  
+  # Maximum cyclomatic complexity
+  max_complexity: 10
+  
+  # Maximum file length
+  max_file_length: 500
+  
+  # Maximum function length
+  max_function_length: 50
