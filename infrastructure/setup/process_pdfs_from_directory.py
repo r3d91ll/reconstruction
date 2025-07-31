@@ -14,16 +14,20 @@ import json
 import time
 import shutil
 import logging
+import threading
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Set
 import multiprocessing as mp
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 
 import numpy as np
 from tqdm import tqdm
 from arango import ArangoClient
+
+# Import shared utilities
+from utils import extract_arxiv_id, validate_disk_space
 
 # Set environment variable before imports
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
@@ -44,9 +48,9 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DirectoryPDFConfig:
     """Configuration for directory-based PDF processing"""
-    # Directories
-    pdf_directory: str = "/mnt/data-cold/arxiv_data/pdf"
-    working_dir: str = "/tmp/arxiv_pdf_processing"
+    # Directories - configurable via environment variables
+    pdf_directory: str = os.environ.get('PDF_DIRECTORY', '/mnt/data-cold/arxiv_data/pdf')
+    working_dir: str = os.environ.get('WORKING_DIRECTORY', '/tmp/arxiv_pdf_processing')
     
     # Database
     db_name: str = "arxiv_single_collection"
@@ -213,24 +217,42 @@ class DoclingConverter:
             logger.error("Docling not installed. Please install with: pip install docling")
             raise
             
-    def convert_pdf(self, pdf_path: Path) -> Optional[str]:
-        """Convert PDF to markdown"""
-        try:
-            torch.cuda.set_device(self.gpu_id)
-            result = self.converter.convert(str(pdf_path))
-            
-            if result and hasattr(result, 'render_as_markdown'):
-                markdown = result.render_as_markdown()
-                return markdown
-            else:
-                logger.warning(f"No markdown output for {pdf_path}")
-                return None
+    def convert_pdf(self, pdf_path: Path, timeout: float = 300.0) -> Optional[str]:
+        """Convert PDF to markdown with timeout"""
+        result_container = {'markdown': None, 'error': None}
+        
+        def _convert():
+            try:
+                torch.cuda.set_device(self.gpu_id)
+                result = self.converter.convert(str(pdf_path))
                 
-        except Exception as e:
-            logger.error(f"Error converting {pdf_path}: {e}")
+                if result and hasattr(result, 'render_as_markdown'):
+                    result_container['markdown'] = result.render_as_markdown()
+                else:
+                    result_container['error'] = f"No markdown output for {pdf_path}"
+                    
+            except Exception as e:
+                result_container['error'] = f"Error converting {pdf_path}: {e}"
+            finally:
+                torch.cuda.empty_cache()
+        
+        # Run conversion in a thread with timeout
+        thread = threading.Thread(target=_convert)
+        thread.start()
+        thread.join(timeout=timeout)
+        
+        if thread.is_alive():
+            # Timeout occurred
+            logger.warning(f"PDF conversion timed out after {timeout}s for {pdf_path}")
+            # Note: We can't kill the thread, but we can return None
+            # The thread will continue running in background
             return None
-        finally:
-            torch.cuda.empty_cache()
+            
+        if result_container['error']:
+            logger.error(result_container['error'])
+            return None
+            
+        return result_container['markdown']
 
 class TextChunker:
     """Chunk text semantically"""
@@ -410,6 +432,8 @@ class PDFProcessor:
         
     def process_pdf(self, pdf_path: Path, arxiv_id: str) -> bool:
         """Process a single PDF and update database"""
+        start_time = time.time()
+        
         try:
             # Convert to markdown
             logger.info(f"Converting {arxiv_id} to markdown...")
@@ -455,7 +479,7 @@ class PDFProcessor:
                 'pdf_status': {
                     'state': 'completed',
                     'last_updated': datetime.utcnow().isoformat() + 'Z',
-                    'processing_time_seconds': None
+                    'processing_time_seconds': time.time() - start_time
                 }
             })
             
@@ -486,6 +510,16 @@ class DirectoryPDFPipeline:
     def __init__(self, config: DirectoryPDFConfig):
         self.config = config
         self.stats = ProcessingStats()
+        
+        # Validate working directory has enough disk space
+        has_space, available_gb = validate_disk_space(config.working_dir, required_gb=10.0)
+        if not has_space:
+            raise ValueError(
+                f"Insufficient disk space in {config.working_dir}. "
+                f"Need at least 10GB, but only {available_gb:.2f}GB available."
+            )
+        logger.info(f"Working directory {config.working_dir} has {available_gb:.2f}GB free space")
+        
         self.db_checker = DatabaseChecker(config)
         self.processor = PDFProcessor(config)
         
@@ -504,16 +538,8 @@ class DirectoryPDFPipeline:
         return pdf_files
         
     def extract_arxiv_id(self, pdf_path: Path) -> Optional[str]:
-        """Extract arXiv ID from filename"""
-        # Handle different naming conventions
-        # e.g., "2301.00001.pdf" or "2301_00001.pdf"
-        filename = pdf_path.stem
-        
-        # Replace underscore with dot if present
-        if '_' in filename and '.' not in filename:
-            filename = filename.replace('_', '.', 1)
-            
-        return filename
+        """Extract arXiv ID from filename using shared utility"""
+        return extract_arxiv_id(pdf_path)
         
     def process_batch(self, pdf_batch: List[Path]) -> Dict[str, str]:
         """Process a batch of PDFs"""
@@ -667,6 +693,18 @@ def main():
     if not os.environ.get('ARANGO_PASSWORD'):
         logger.error("ARANGO_PASSWORD environment variable not set")
         sys.exit(1)
+    
+    # Validate GPU IDs
+    if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        if args.docling_gpu >= num_gpus:
+            logger.error(f"Invalid docling GPU ID {args.docling_gpu}. Available GPUs: 0-{num_gpus-1}")
+            sys.exit(1)
+        if args.embedding_gpu >= num_gpus:
+            logger.error(f"Invalid embedding GPU ID {args.embedding_gpu}. Available GPUs: 0-{num_gpus-1}")
+            sys.exit(1)
+    else:
+        logger.warning("No GPUs available. Processing will be slow.")
         
     config = DirectoryPDFConfig(
         pdf_directory=args.pdf_directory,

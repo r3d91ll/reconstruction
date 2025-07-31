@@ -15,9 +15,21 @@ from arango import ArangoClient
 def main():
     """Monitor PDF directory and processing status"""
     
-    if not os.environ.get('ARANGO_PASSWORD'):
-        print("ERROR: ARANGO_PASSWORD environment variable not set")
-        sys.exit(1)
+    # Check required environment variables
+    required_env_vars = {
+        'ARANGO_HOST': 'http://192.168.1.69:8529',  # default value
+        'ARANGO_DATABASE': 'base',  # default value
+        'ARANGO_USERNAME': 'root',  # default value
+        'ARANGO_PASSWORD': None  # required, no default
+    }
+    
+    env_config = {}
+    for var, default in required_env_vars.items():
+        value = os.environ.get(var, default)
+        if value is None:
+            print(f"ERROR: {var} environment variable not set")
+            sys.exit(1)
+        env_config[var] = value
         
     pdf_dir = Path('/mnt/data-cold/arxiv_data/pdf')
     
@@ -48,11 +60,11 @@ def main():
         arxiv_ids.append(filename)
         
     # Connect to database
-    client = ArangoClient(hosts='http://192.168.1.69:8529')
+    client = ArangoClient(hosts=env_config['ARANGO_HOST'])
     db = client.db(
-        'base',
-        username='root',
-        password=os.environ['ARANGO_PASSWORD']
+        env_config['ARANGO_DATABASE'],
+        username=env_config['ARANGO_USERNAME'],
+        password=env_config['ARANGO_PASSWORD']
     )
     collection = db.collection('arxiv_documents')
     

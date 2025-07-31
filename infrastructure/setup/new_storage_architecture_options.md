@@ -113,7 +113,7 @@ mdadm --detail --scan >> /etc/mdadm/mdadm.conf
 update-initramfs -u
 
 # 6. Add to fstab
-echo "UUID=$(blkid -s UUID -o value /dev/md2) /mnt/data-cold xfs defaults,noatime 0 2" >> /etc/fstab
+echo "UUID=\"$(blkid -s UUID -o value /dev/md2)\" /mnt/data-cold xfs defaults,noatime 0 2" >> /etc/fstab
 ```
 
 ### Monitoring Setup:
@@ -123,9 +123,7 @@ apt install mailutils
 echo "MAILADDR=your-email@example.com" >> /etc/mdadm/mdadm.conf
 
 # Or script alerts
-cat > /etc/mdadm/mdadm.conf << 'EOF'
-PROGRAM /usr/local/bin/raid-alert.sh
-EOF
+echo "PROGRAM /usr/local/bin/raid-alert.sh" >> /etc/mdadm/mdadm.conf
 
 # Regular scrubbing (monthly)
 echo '0 2 1 * * root /usr/share/mdadm/checkarray --all' > /etc/cron.d/mdadm-scrub

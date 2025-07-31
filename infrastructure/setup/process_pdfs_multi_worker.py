@@ -551,7 +551,7 @@ class MultiWorkerPipeline:
             with tqdm(total=len(pdfs_to_process), desc="Processing PDFs") as pbar:
                 last_processed = 0
                 
-                while any(p.is_alive() for p in processes):
+                while any(p.is_alive() for p in processes) or not db_queue.empty():
                     time.sleep(1)
                     
                     # Update progress

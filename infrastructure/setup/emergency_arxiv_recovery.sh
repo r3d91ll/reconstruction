@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Emergency ArXiv Data Recovery Script
 # For failing sda1 with XFS corruption
 

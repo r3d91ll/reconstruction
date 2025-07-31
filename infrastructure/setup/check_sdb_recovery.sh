@@ -1,7 +1,13 @@
 #!/bin/bash
+set -euo pipefail
+
+cleanup() {
+  mountpoint -q "$MOUNT_POINT" && umount "$MOUNT_POINT"
+}
+trap cleanup EXIT
+
 # Check sdb for recoverable data
 # Run as root
-
 echo "=== Checking sdb for Recoverable Data ==="
 echo "Date: $(date)"
 echo "sdb was likely the RAID1 mirror of sda"

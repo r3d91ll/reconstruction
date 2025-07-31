@@ -14,7 +14,21 @@ def test_jina_capabilities():
     print("Testing Jina model capabilities...")
     
     model_name = "jinaai/jina-embeddings-v3"
-    device = 'cuda:1' if torch.cuda.is_available() else 'cpu'
+    
+    # Dynamic device selection
+    if torch.cuda.is_available():
+        device_count = torch.cuda.device_count()
+        cuda_visible = os.environ.get('CUDA_VISIBLE_DEVICES', '0')
+        try:
+            # Handle comma-separated list by taking the first device
+            device_id = int(cuda_visible.split(',')[0])
+            if device_id >= device_count:
+                device_id = 0
+        except (ValueError, IndexError):
+            device_id = 0
+        device = f'cuda:{device_id}'
+    else:
+        device = 'cpu'
     
     print(f"Loading model: {model_name}")
     print(f"Device: {device}")

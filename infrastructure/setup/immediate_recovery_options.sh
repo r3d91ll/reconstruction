@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Immediate recovery options while waiting for 6TB drives
 # Run as root
 

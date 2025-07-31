@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # RAID1 Recovery Investigation Script
 # Run as root
 

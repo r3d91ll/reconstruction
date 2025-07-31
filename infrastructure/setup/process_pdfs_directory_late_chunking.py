@@ -319,11 +319,11 @@ class JinaLateChunkingEmbedder:
                 'embedding': chunk_embedding.cpu().numpy(),
                 'text': chunk_text,
                 'metadata': {
-                    'token_start': start_idx,
-                    'token_end': end_idx,
+                    'token_start': int(start_idx),
+                    'token_end': int(end_idx),
                     'char_start': int(start_char),
                     'char_end': int(end_char),
-                    'tokens': end_idx - start_idx
+                    'tokens': int(end_idx - start_idx)
                 }
             })
             

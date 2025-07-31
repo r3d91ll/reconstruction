@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Explore the 1TB rescued image
 # Run as root
 
@@ -39,8 +40,8 @@ echo "=== Setting up loop device ==="
 LOOP_DEV=$(losetup -f)
 echo "Using loop device: $LOOP_DEV"
 
-# Attach image to loop device
-losetup "$LOOP_DEV" "$IMAGE_PATH"
+# Attach image to loop device (read-only)
+losetup -r "$LOOP_DEV" "$IMAGE_PATH"
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to set up loop device"
     exit 1

@@ -24,9 +24,15 @@ def main():
         print("ERROR: ARANGO_PASSWORD environment variable not set")
         sys.exit(1)
     
+    # Check if script exists
+    script_path = 'process_pdfs_multi_worker.py'
+    if not os.path.exists(script_path):
+        print(f"ERROR: Script '{script_path}' not found in current directory")
+        sys.exit(1)
+        
     # Test with 10 PDFs
     test_params = [
-        'python3', 'process_pdfs_multi_worker.py',
+        'python3', script_path,
         '--max-pdfs', '10',
         '--docling-workers', '4'
     ]
@@ -35,6 +41,7 @@ def main():
     print("Expected time: ~15-20 seconds (vs 60 seconds with single worker)")
     print("-" * 40)
     
+    process = None
     try:
         # Run with real-time output
         process = subprocess.Popen(
@@ -59,7 +66,8 @@ def main():
             
     except KeyboardInterrupt:
         print("\nTest interrupted by user")
-        process.terminate()
+        if process is not None:
+            process.terminate()
         sys.exit(1)
     except Exception as e:
         print(f"Error: {e}")

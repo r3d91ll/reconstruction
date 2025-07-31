@@ -49,9 +49,15 @@ def main():
     print("Running DRY RUN first")
     print("-" * 40)
     
+    # Check if script exists
+    script_path = 'process_pdfs_directory_late_chunking.py'
+    if not os.path.exists(script_path):
+        print(f"ERROR: Script '{script_path}' not found in current directory")
+        return False
+        
     # Run dry run with just 5 PDFs
     dry_run_params = [
-        'python3', 'process_pdfs_directory_late_chunking.py',
+        'python3', script_path,
         '--dry-run',
         '--max-pdfs', '5',
         '--batch-size', '2',

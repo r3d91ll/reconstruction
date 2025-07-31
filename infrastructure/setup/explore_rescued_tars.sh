@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Explore the 1TB rescued image for tar files
 # Run as root
 
@@ -38,6 +39,18 @@ fi
 echo "=== Setting up loop device ==="
 LOOP_DEV=$(losetup -f)
 echo "Using loop device: $LOOP_DEV"
+
+# Set up cleanup trap
+cleanup() {
+    echo "\nCleaning up..."
+    if mountpoint -q "$MOUNT_POINT" 2>/dev/null; then
+        umount "$MOUNT_POINT" || true
+    fi
+    if [ -n "${LOOP_DEV:-}" ] && losetup -l | grep -q "$LOOP_DEV"; then
+        losetup -d "$LOOP_DEV" || true
+    fi
+}
+trap cleanup EXIT
 
 # Attach image to loop device
 losetup "$LOOP_DEV" "$IMAGE_PATH"

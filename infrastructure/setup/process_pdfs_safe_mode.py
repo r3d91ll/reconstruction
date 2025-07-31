@@ -58,6 +58,9 @@ class SafeModeConfig:
     batch_size: int = 1  # Process one PDF at a time
     max_pdfs_per_run: Optional[int] = 100  # Limit per run
     
+    # I/O thresholds
+    max_io_wait_percent: float = 30.0  # Maximum I/O wait percentage
+    
     # Resource limits
     max_cpu_percent: float = 70.0  # Pause if CPU > 70%
     max_memory_percent: float = 70.0  # Pause if RAM > 70%
@@ -88,6 +91,11 @@ class SystemHealthMonitor:
         try:
             result = subprocess.run(['cat', '/proc/mdstat'], 
                                   capture_output=True, text=True)
+            
+            if result.returncode != 0:
+                logger.error(f"Failed to read /proc/mdstat: {result.stderr}")
+                return False
+                
             mdstat = result.stdout
             
             # Check for degraded arrays
@@ -101,6 +109,9 @@ class SystemHealthMonitor:
                 return False
                 
             return True
+        except FileNotFoundError:
+            logger.error("/proc/mdstat not found - RAID monitoring not available")
+            return False
         except Exception as e:
             logger.error(f"Failed to check RAID status: {e}")
             return False
@@ -122,7 +133,7 @@ class SystemHealthMonitor:
         if disk_io:
             # Simple check - could be more sophisticated
             io_wait = psutil.cpu_times_percent(interval=0.1).iowait
-            if io_wait > 30:  # High I/O wait
+            if io_wait > self.config.max_io_wait_percent:  # High I/O wait
                 return False, f"High I/O wait: {io_wait:.1f}%"
         
         return True, "System resources OK"
@@ -177,6 +188,12 @@ class SafeModePipeline:
     
     def __init__(self, config: SafeModeConfig):
         self.config = config
+        
+        # Validate database password
+        if not config.db_password:
+            logger.error("ARANGO_PASSWORD environment variable is not set or empty")
+            sys.exit(1)
+            
         self.health_monitor = SystemHealthMonitor(config)
         self.processed_count = 0
         self.failed_count = 0
@@ -197,7 +214,6 @@ class SafeModePipeline:
         logger.info("Initializing models...")
         
         # Initialize Docling on GPU 0
-        os.environ['CUDA_VISIBLE_DEVICES'] = '0'
         from docling.document_converter import DocumentConverter, PdfFormatOption
         from docling.datamodel.pipeline_options import PdfPipelineOptions
         from docling.datamodel.base_models import InputFormat
@@ -215,8 +231,7 @@ class SafeModePipeline:
             }
         )
         
-        # Initialize Jina on GPU 1  
-        os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+        # Initialize Jina on GPU 1
         model_name = "jinaai/jina-embeddings-v3"
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         self.embedding_model = AutoModel.from_pretrained(
@@ -273,7 +288,6 @@ class SafeModePipeline:
             start_time = time.time()
             
             # Step 1: Convert PDF to markdown (GPU 0)
-            os.environ['CUDA_VISIBLE_DEVICES'] = '0'
             result = self.docling_converter.convert(str(pdf_path))
             
             if not result or not hasattr(result, 'document'):
@@ -290,7 +304,6 @@ class SafeModePipeline:
                 torch.cuda.empty_cache()
                 
             # Step 2: Late chunking with embeddings (GPU 1)
-            os.environ['CUDA_VISIBLE_DEVICES'] = '1'
             chunks = self.create_chunks_with_embeddings(markdown)
             
             if not chunks:

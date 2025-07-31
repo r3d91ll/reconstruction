@@ -151,7 +151,7 @@ def run_structure_tests():
         return False
         
     config = {
-        'db_name': 'arxiv_single_collection',
+        'db_name': 'base',
         'collection_name': 'arxiv_documents',
         'db_host': '192.168.1.69',
         'db_port': 8529,

@@ -27,8 +27,17 @@ rsync -avP /mnt/data-cold/arxiv_data/ /home/todd/olympus/arxiv_backup/
 
 ### 3. Monitor RAID Health
 ```bash
-# Add to crontab for monitoring
-*/5 * * * * /usr/sbin/mdadm --monitor --scan --oneshot 2>&1 | grep -v "mdadm: No mail address or alert command" >> /var/log/mdadm-monitor.log
+# Configure proper alerting in /etc/mdadm/mdadm.conf:
+echo "MAILADDR=your-email@example.com" >> /etc/mdadm/mdadm.conf
+# Or use a custom alert script:
+echo "PROGRAM /usr/local/bin/raid-alert.sh" >> /etc/mdadm/mdadm.conf
+
+# Then enable monitoring daemon:
+systemctl enable mdadm-monitor
+systemctl start mdadm-monitor
+
+# Alternative: Add to crontab with custom alert script
+*/5 * * * * /usr/sbin/mdadm --monitor --scan --oneshot --program=/usr/local/bin/raid-alert.sh
 ```
 
 ## Safer RAID Configuration Options
@@ -43,7 +52,11 @@ rsync -avP /mnt/data-cold/arxiv_data/ /home/todd/olympus/arxiv_backup/
 3. Unmount all LVs on vg0
 4. Remove LVM setup: lvremove, vgremove, pvremove
 5. Stop and remove md0
-6. Create new RAID10:
+6. Zero old superblocks to prevent auto-assembly:
+   for dev in /dev/nvme3n1p1 /dev/nvme4n1p1 /dev/nvme5n1p1 /dev/nvme6n1p1; do
+       mdadm --zero-superblock $dev
+   done
+7. Create new RAID10:
    mdadm --create /dev/md0 --level=10 --raid-devices=4 /dev/nvme3n1p1 /dev/nvme4n1p1 /dev/nvme5n1p1 /dev/nvme6n1p1
 ```
 
