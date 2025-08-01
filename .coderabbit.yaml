@@ -21,130 +21,79 @@ reviews:
   collapse_walkthrough: false
   
   # Automatically approve dependency updates
-  auto_review_enabled: true
-  auto_review_drafts: false
+  auto_review:
+    enabled: true
+    drafts: false
+  
+  # Path-specific instructions
+  path_instructions:
+    - path: "paper/**"
+      instructions: |
+        - Focus on mathematical rigor and clarity
+        - Ensure citations follow academic standards
+        - Verify mathematical proofs are well-structured
+        - Check for consistency in terminology
+        - Validate equations and formulas
+        - Ensure theoretical claims are properly supported
+        
+    - path: "infrastructure/setup/**"
+      instructions: |
+        - Check for proper GPU resource management
+        - Verify ArangoDB connection patterns and transactions
+        - Ensure proper error handling for arXiv data processing
+        - Validate batch processing efficiency
+        - Check for proper checkpoint and recovery mechanisms
+        - Ensure atomic transaction integrity
+        
+    - path: "infrastructure/irec_infrastructure/**"
+      instructions: |
+        - Verify proper abstraction and modularity
+        - Check for proper async/await patterns
+        - Ensure GPU memory management is optimal
+        - Validate embedding batch sizes and efficiency
+        - Check for proper error propagation
+        - Ensure proper logging and monitoring
+        
+    - path: "experiments/**"
+      instructions: |
+        - Ensure reproducibility of experiments
+        - Check for proper data handling and cleanup
+        - Verify statistical validity of results
+        - Ensure proper separation of concerns
+        - Validate experiment configurations
+        
+    - path: "*.py"
+      instructions: |
+        - Follow PEP 8 style guidelines
+        - Use type hints where appropriate
+        - Ensure proper docstrings for public functions
+        - Check for proper exception handling
+        - Verify no hardcoded paths or credentials
+  
+  # File patterns to exclude from reviews
+  path_filters:
+    - "**/*.lock"
+    - "**/node_modules/**"
+    - "**/__pycache__/**"
+    - "**/venv/**"
+    - "**/.mypy_cache/**"
+    - "**/.pytest_cache/**"
+    - "**/logs/**"
+    - "**/data/**"
+    - "**/*.db"
+    - "**/checkpoints/**"
+    - "**/*.done"
+    - "**/*.log"
+    - "**/models/*.pth"
+    - "**/*.mdb"
 
-# Path-specific instructions
-path_instructions:
-  - path: "paper/**"
-    instructions: |
-      - Focus on mathematical rigor and clarity
-      - Ensure citations follow academic standards
-      - Verify mathematical proofs are well-structured
-      - Check for consistency in terminology
-      - Validate equations and formulas
-      - Ensure theoretical claims are properly supported
-      
-  - path: "infrastructure/setup/**"
-    instructions: |
-      - Check for proper GPU resource management
-      - Verify ArangoDB connection patterns and transactions
-      - Ensure proper error handling for arXiv data processing
-      - Validate batch processing efficiency
-      - Check for proper checkpoint and recovery mechanisms
-      - Ensure atomic transaction integrity
-      
-  - path: "infrastructure/irec_infrastructure/**"
-    instructions: |
-      - Verify proper abstraction and modularity
-      - Check for proper async/await patterns
-      - Ensure GPU memory management is optimal
-      - Validate embedding batch sizes and efficiency
-      - Check for proper error propagation
-      - Ensure proper logging and monitoring
-      
-  - path: "experiments/**"
-    instructions: |
-      - Ensure reproducibility of experiments
-      - Check for proper data handling and cleanup
-      - Verify statistical validity of results
-      - Ensure proper separation of concerns
-      - Validate experiment configurations
-      
-  - path: "*.py"
-    instructions: |
-      - Follow PEP 8 style guidelines
-      - Use type hints where appropriate
-      - Ensure proper docstrings for public functions
-      - Check for proper exception handling
-      - Verify no hardcoded paths or credentials
-
-# Issue Management Configuration
-issue_handling:
-  # Automatically create issues for critical findings
-  auto_create_issues: true
-  
-  # Issue labels to apply
-  issue_labels:
-    - "coderabbit"
-    - "automated-review"
-  
-  # Group similar issues together
-  group_issues: true
-  
-  # Priority mapping
-  issue_priority:
-    critical: "P0-critical"
-    high: "P1-high"
-    medium: "P2-medium"
-    low: "P3-low"
-
-# Custom review checklist
-review_checklist:
-  - "Code follows project style guidelines"
-  - "Tests are included for new functionality"
-  - "Documentation is updated"
-  - "No hardcoded credentials or secrets"
-  - "Mathematical equations are properly validated"
-  - "GPU resources are properly managed"
-  - "Database transactions maintain atomicity"
-  - "Batch processing includes proper checkpointing"
-  - "Error messages are informative but secure"
-  - "Experiments are reproducible"
-
-# File patterns to exclude from reviews
-exclude_patterns:
-  - "**/*.lock"
-  - "**/node_modules/**"
-  - "**/__pycache__/**"
-  - "**/venv/**"
-  - "**/.mypy_cache/**"
-  - "**/.pytest_cache/**"
-  - "**/logs/**"
-  - "**/data/**"
-  - "**/*.db"
-  - "**/checkpoints/**"
-  - "**/*.done"
-  - "**/*.log"
-  - "**/models/*.pth"
-  - "**/*.mdb"
-
-# Additional instructions for processing and validation
-batch_processing:
-  # Maximum issues to create per review
-  max_issues_per_review: 10
-  
-  # Categorize issues by type
-  issue_categories:
-    mathematical-rigor: "math-validation"
-    gpu-optimization: "gpu-performance"
-    database-integrity: "db-transactions"
-    experiment-validity: "experiment-reproducibility"
-    theory-consistency: "theory-validation"
-    performance: "performance"
-    code-quality: "code-quality"
-    documentation: "documentation"
-
-# Code quality thresholds
-quality_gates:
-  # Minimum code coverage percentage
-  min_coverage: 70
-  
-  # Maximum cyclomatic complexity
-  max_complexity: 15
-  
-  # Maximum file length (increased for academic papers and pipelines)
-  max_file_length: 1000
-  
-  # Maximum function length (increased for complex processing functions)
-  max_function_length: 100
+# Note: The following configurations from the original file are not supported by CodeRabbit:
+# - issue_handling: Use GitHub Actions or CI/CD for issue creation
+# - review_checklist: Implement in CI/CD pipeline
+# - batch_processing: Not a valid CodeRabbit configuration
+# - quality_gates: Use external quality tools (SonarQube, etc.)
+#
+# For quality gates and issue management, consider using:
+# - GitHub Actions for automated issue creation
+# - Pre-commit hooks for code quality checks
+# - CI/CD pipelines for coverage and complexity metrics
