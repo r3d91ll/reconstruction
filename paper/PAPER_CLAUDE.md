@@ -21,21 +21,25 @@ If ANY dimension = 0, then Information = 0
 ## Key Claims to Prove
 
 ### 1. Multiplicative Model
+
 - Information requires ALL dimensions > 0
 - Not additive: you can't compensate for missing dimensions
 - Empirically testable through zero propagation
 
 ### 2. Context Amplification
+
 - Context acts as exponential amplifier: Context^α
 - Different domains have different α values (1.5-2.0)
 - Measurable through conveyance analysis
 
 ### 3. Observer Dependency
+
 - Different observers create different information realities
 - FRAME function determines what information exists
 - A-Observer vs S-Observer perspectives
 
 ### 4. Theory-Practice Bridges
+
 - High-conveyance connections between abstract and concrete
 - Discoverable through dimensional analysis
 - Key to knowledge transformation
@@ -43,18 +47,21 @@ If ANY dimension = 0, then Information = 0
 ## Validation Strategy
 
 ### Mathematical Validation
+
 1. Prove multiplicative model mathematically
 2. Validate dimensional bounds (Johnson-Lindenstrauss)
 3. Show convergence properties
 4. Demonstrate stability of Context^α
 
 ### Empirical Validation
+
 1. Test zero propagation (any dimension = 0)
 2. Measure context amplification values
 3. Find real theory-practice bridges
 4. Compare observer perspectives
 
 ### Computational Validation
+
 1. Implement minimal proof-of-concept
 2. Process test corpus (100-1000 documents)
 3. Visualize dimensional relationships
@@ -63,12 +70,14 @@ If ANY dimension = 0, then Information = 0
 ## Success Criteria
 
 ### For Academic Presentation
+
 - [ ] Mathematical proofs complete and verified
 - [ ] Empirical evidence from test corpus
 - [ ] Working demonstration (minimal viable)
 - [ ] Clear differentiation from existing theories
 
 ### For Publication
+
 - [ ] Formal mathematical framework
 - [ ] Reproducible experiments
 - [ ] Statistical validation
@@ -77,16 +86,19 @@ If ANY dimension = 0, then Information = 0
 ## Current Status
 
 ### Theory: [In Progress]
+
 - Core framework documented
 - Mathematical foundations laid
 - Critical responses addressed
 
 ### Validation: [Pending]
+
 - Wolfram validation script ready
 - Python implementation needed
 - Test corpus selection required
 
 ### Evidence: [Partial]
+
 - Zero propagation conceptually proven
 - Context amplification theoretical
 - Bridge discovery methodology defined
@@ -94,16 +106,19 @@ If ANY dimension = 0, then Information = 0
 ## Key Differentiators
 
 ### From Traditional Information Theory
+
 - Observer-dependent (not universal)
 - Multiplicative (not additive)
 - Dimensional (not scalar)
 
 ### From Semantic Similarity
+
 - Includes actionability (CONVEYANCE)
 - Context amplifies exponentially
 - Bridges have special properties
 
 ### From Standard RAG/Embeddings
+
 - Theory-grounded dimensions
 - Observer-relative retrieval
 - Bridge-based navigation
@@ -134,12 +149,14 @@ paper/
 This section focuses ONLY on proving the theoretical framework. Implementation details, infrastructure, and applications are handled separately. The goal is academic validation and publication of the core theory.
 
 **Focus areas**:
+
 1. Mathematical rigor
 2. Empirical validation
 3. Clear presentation
 4. Reproducible results
 
 **Avoid**:
+
 1. Implementation complexity
 2. Infrastructure details
 3. Mythological allegories

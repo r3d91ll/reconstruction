@@ -29,10 +29,25 @@ __version__ = "0.1.0"
 __author__ = "Information Reconstructionism Project"
 
 # Convenience imports
-from .data.document_processor import DocumentProcessor
-from .embeddings.jina_client import JinaClient
+from .embeddings import (
+    LocalJinaGPU,
+    LocalJinaConfig,
+    BatchEmbeddingProcessor,
+    create_local_jina_processor
+)
+from .data import ArxivLoader
+# Temporarily disabled due to import issues
+# from .data.document_processor import DocumentProcessor
+# from .embeddings.jina_client import JinaClient
 
 __all__ = [
-    "DocumentProcessor",
-    "JinaClient",
+    # Embeddings components
+    "LocalJinaGPU",
+    "LocalJinaConfig",
+    "BatchEmbeddingProcessor",
+    "create_local_jina_processor",
+    # Data components
+    "ArxivLoader",
+    # Additional components will be added as imports are resolved
+    # "DocumentProcessor",  # Currently disabled due to import issues
 ]

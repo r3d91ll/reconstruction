@@ -15,8 +15,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from .jina_client import JinaClient, JinaConfig
-from .late_chunking import LateChucker
+from .local_jina_gpu import LocalJinaGPU, LocalJinaConfig
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +51,7 @@ class BatchEmbeddingProcessor:
     
     def __init__(
         self,
-        jina_config: Optional[JinaConfig] = None,
+        jina_config: Optional[LocalJinaConfig] = None,
         use_gpu: bool = True,
         checkpoint_dir: Optional[str] = None
     ):
@@ -64,8 +63,7 @@ class BatchEmbeddingProcessor:
             use_gpu: Whether to use GPU acceleration
             checkpoint_dir: Directory for checkpoints (enables resume)
         """
-        self.jina_client = JinaClient(jina_config) if jina_config else None
-        self.chunker = LateChucker(use_gpu=use_gpu)
+        self.jina_client = LocalJinaGPU(jina_config) if jina_config else None
         self.use_gpu = use_gpu
         
         # Setup checkpointing
@@ -87,6 +85,9 @@ class BatchEmbeddingProcessor:
     ) -> Dict[str, Any]:
         """
         Process documents to generate embeddings.
+        
+        NOTE: This method requires chunker functionality to be implemented.
+        Currently, it will log warnings and skip all documents.
         
         Args:
             pdf_paths: List of PDF paths to process
@@ -130,70 +131,45 @@ class BatchEmbeddingProcessor:
             
             logger.info(f"Processing batch {batch_idx // batch_size + 1}")
             
-            # Chunk documents
-            chunk_results = self.chunker.batch_chunk_documents(
-                batch_paths,
-                show_progress=True
-            )
-            
-            # Process each document's chunks
-            for doc_idx, (pdf_path, chunk_result) in enumerate(zip(batch_paths, chunk_results)):
-                if not chunk_result["success"]:
-                    logger.error(f"Failed to chunk {pdf_path}: {chunk_result.get('error')}")
-                    stats["failed_documents"] += 1
-                    continue
+            # Process each document
+            for doc_idx, pdf_path in enumerate(batch_paths):
                 
                 try:
-                    # Generate embeddings for chunks
-                    chunks = chunk_result["chunks"]
-                    chunk_texts = [chunk["content"] for chunk in chunks]
+                    # For now, we'll process documents without chunking
+                    # This is a simplified implementation that processes whole documents
+                    # In a real implementation, you would need to:
+                    # 1. Extract text from PDF
+                    # 2. Split into chunks if needed
+                    # 3. Generate embeddings for each chunk
                     
-                    # Process chunks in smaller batches for embeddings
-                    all_embeddings = []
+                    logger.warning(f"Chunker not implemented - skipping {pdf_path}")
+                    logger.warning("To use this processor, implement document chunking functionality")
+                    stats["failed_documents"] += 1
+                    continue
                     
-                    for i in range(0, len(chunk_texts), chunk_batch_size):
-                        chunk_batch = chunk_texts[i:i + chunk_batch_size]
-                        
-                        if self.jina_client:
-                            # Use Jina API
-                            embeddings = self.jina_client.encode_batch(chunk_batch)
-                        else:
-                            # No Jina client configured
-                            raise ValueError("No Jina client configured - cannot generate embeddings")
-                        
-                        all_embeddings.extend(embeddings)
-                    
-                    # Save results
-                    doc_id = Path(pdf_path).stem
-                    result = {
-                        "document_id": doc_id,
-                        "pdf_path": str(pdf_path),
-                        "metadata": chunk_result["metadata"],
-                        "chunks": chunks,
-                        "embeddings": np.array(all_embeddings).tolist(),
-                        "processing_timestamp": datetime.now().isoformat()
-                    }
-                    
-                    # Save to file
-                    output_file = output_dir / f"{doc_id}_embeddings.json"
-                    with open(output_file, 'w') as f:
-                        json.dump(result, f)
-                    
-                    # Update statistics
-                    stats["processed_documents"] += 1
-                    stats["total_chunks"] += len(chunks)
-                    stats["total_embeddings"] += len(all_embeddings)
-                    
-                    # Mark as processed
-                    processed_docs.add(str(pdf_path))
-                    
-                    # Progress callback
-                    if progress_callback:
-                        progress_callback({
-                            "current": stats["processed_documents"],
-                            "total": len(pdf_paths),
-                            "document": doc_id
-                        })
+                    # Example of what the implementation would look like:
+                    # document_text = extract_text_from_pdf(pdf_path)
+                    # chunks = split_into_chunks(document_text)
+                    # chunk_texts = [chunk["content"] for chunk in chunks]
+                    # 
+                    # all_embeddings = []
+                    # for i in range(0, len(chunk_texts), chunk_batch_size):
+                    #     chunk_batch = chunk_texts[i:i + chunk_batch_size]
+                    #     if self.jina_client:
+                    #         embeddings = self.jina_client.encode_batch(chunk_batch)
+                    #     else:
+                    #         raise ValueError("No Jina client configured")
+                    #     all_embeddings.extend(embeddings)
+                    # 
+                    # doc_id = Path(pdf_path).stem
+                    # result = {
+                    #     "document_id": doc_id,
+                    #     "pdf_path": str(pdf_path),
+                    #     "metadata": {},
+                    #     "chunks": chunks,
+                    #     "embeddings": np.array(all_embeddings).tolist(),
+                    #     "processing_timestamp": datetime.now().isoformat()
+                    # }
                     
                 except (ValueError, IOError, json.JSONDecodeError) as e:
                     logger.error(f"Error processing {pdf_path}: {e}")

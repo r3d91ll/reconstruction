@@ -48,7 +48,7 @@ logs/
 *.ipynb
 
 # Model files
-models/
+#models/
 *.pt
 *.pth
 *.onnx
@@ -66,3 +66,8 @@ temp/
 
 validation/data/raw_pdfs/*
 infrastructure_setup/archive_tests/
+*.mdb
+
+infrastructure/setup/checkpoints/*
+checkpoints/
+infrastructure/setup/orig-process_abstracts_single_collection.py
