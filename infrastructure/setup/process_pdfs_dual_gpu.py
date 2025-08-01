@@ -102,8 +102,8 @@ class PDFConfig:
             raise ValueError("ARANGO_PASSWORD environment variable not set")
         if not self.db_host:
             raise ValueError("db_host cannot be empty")
-        if not self.db_user:
-            raise ValueError("db_user cannot be empty")
+        if not self.db_username:
+            raise ValueError("db_username cannot be empty")
         if not self.db_name:
             raise ValueError("db_name cannot be empty")
         if not self.collection_name:

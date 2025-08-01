@@ -8,7 +8,6 @@ import os
 import sys
 import json
 import torch
-import numpy as np
 import logging
 from pathlib import Path
 from typing import List, Tuple
@@ -65,7 +64,8 @@ class BatchSizeFinder:
                     abstract = data.get('abstract', '').strip()
                     if len(abstract) > 50:  # Skip very short abstracts
                         abstracts.append(abstract)
-            except:
+            except (json.JSONDecodeError, IOError, OSError) as e:
+                logger.debug(f"Failed to load {json_file}: {e}")
                 continue
                 
         logger.info(f"Loaded {len(abstracts)} test abstracts")

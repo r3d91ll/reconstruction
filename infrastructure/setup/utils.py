@@ -41,7 +41,12 @@ def extract_arxiv_id(filename: str) -> Optional[str]:
     # Modern format: YYMM.NNNNN or YYMM.NNNNNN (optionally with version like v1, v2)
     # Legacy format: archive/YYMMNNN or archive-name/YYMMNNN (e.g., hep-th/9901001)
     arxiv_pattern = re.compile(
-        r'^(\d{4}\.\d{4,6}(v\d+)?|[a-z-]+/\d{7}(v\d+)?)$',
+        r'^(?:arXiv:)?'                                  # optional "arXiv:" prefix
+        r'(?:'
+        r'\d{4}\.\d{4,5}(?:v\d+)?'                      # modern: YYMM.NNNN or .NNNNN + opt. v#
+        r'|'
+        r'[a-z][a-z0-9-]*(?:\.[A-Z0-9]+)*\/\d{7}(?:v\d+)?'  # legacy: archive(.Category)/7 digits + opt. v#
+        r')$',
         re.IGNORECASE
     )
     
