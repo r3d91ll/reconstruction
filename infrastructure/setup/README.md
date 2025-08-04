@@ -1,53 +1,32 @@
-# Information Reconstructionism Infrastructure Pipelines
+# Information Reconstructionism Infrastructure
 
-This directory contains two specialized pipelines for processing arXiv documents, each optimized for different use cases.
+Production infrastructure for processing and storing academic paper embeddings at scale.
 
-## Pipeline Architecture
+## Production Pipeline
 
-### 1. Full Document Pipeline (`process_documents_three_collections.py`)
-Processes complete PDF documents with Docling extraction and semantic chunking.
+### ArXiv Processing (`processing_scripts/process_arxiv_production.py`)
+High-performance pipeline for processing ArXiv abstracts with GPU-accelerated embeddings.
 
 **Features:**
-- Extracts full text from PDFs using Docling
-- Creates semantic chunks with Jina v4 embeddings (2048D)
-- Three-collection architecture: `metadata`, `documents`, `chunks`
-- Atomic transactions ensure data consistency
-- Processing rate: ~0.06 documents/second
+- Processes ~2.8M ArXiv abstracts from Kaggle dataset
+- GPU-optimized with Jina v3 embeddings (1024D)
+- Database: `academy_store` / Collection: `base_arxiv`
+- Processing rate: 400-500 docs/second on RTX A6000
+- Full checkpoint/resume capability
+- Comprehensive error handling and retry logic
 
 **Usage:**
 ```bash
-python process_documents_three_collections.py \
-    --count 100 \
-    --source-dir /mnt/data/arxiv_data/pdf \
-    --db-name irec_three_collections \
-    --clean-start
+cd processing_scripts
+ARANGO_PASSWORD='your_password' python3 process_arxiv_production.py
 ```
 
-**Options:**
-- `--count`: Number of documents to process (default: all)
-- `--source-dir`: Directory containing PDF files (default: /mnt/data/arxiv_data/pdf)
-- `--db-name`: Database name (default: irec_three_collections)
-- `--db-host`: Database host (default: 192.168.1.69)
-- `--clean-start`: Drop existing database and start fresh
-
-### 2. Abstract-Only Pipeline (`process_abstracts_only.py`)
-Rapidly processes metadata and abstract embeddings for large-scale discovery.
-
-**Features:**
-- Loads arXiv metadata from JSON files
-- Embeds abstracts using Jina v4 (2048D)
-- Single collection architecture for simplicity
-- Processing rate: ~10,000 abstracts/second
-- GPU selection support (automatically uses GPU 1)
-
-**Usage:**
-```bash
-python process_abstracts_only.py \
-    --count 1000 \
-    --metadata-dir /mnt/data/arxiv_data/metadata \
-    --db-name arxiv_abstracts \
-    --clean-start
-```
+**Configuration:**
+- Input: `/fastpool/temp/arxiv-metadata-oai-snapshot.json`
+- Database Host: 192.168.1.69
+- GPU Batch Size: 1024 documents
+- DB Write Batch: 5000 documents
+- Checkpoint Interval: 50,000 documents
 
 **Options:**
 - `--count`: Number of abstracts to process (default: all)
