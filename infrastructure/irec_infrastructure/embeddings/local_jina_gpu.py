@@ -224,9 +224,20 @@ class LocalJinaGPU:
                     prompt_name="passage"
                 )
             # Convert to list of numpy arrays if needed
-            if isinstance(embeddings, torch.Tensor):
+            if isinstance(embeddings, list):
+                # Jina v4 returns a list of tensors
+                result = []
+                for emb in embeddings:
+                    if torch.is_tensor(emb):
+                        result.append(emb.cpu().numpy())
+                    else:
+                        result.append(np.array(emb))
+                return result
+            elif torch.is_tensor(embeddings):
                 embeddings = embeddings.cpu().numpy()
-            return list(embeddings)
+                return list(embeddings)
+            else:
+                return list(embeddings)
         
         # Fallback to manual encoding
         embeddings = []
@@ -306,11 +317,27 @@ class LocalJinaGPU:
                         task="retrieval",
                         prompt_name="passage"
                     )
-                    if isinstance(embeddings, torch.Tensor):
+                    # Jina v4 returns a list of tensors
+                    if isinstance(embeddings, list):
+                        # Convert each tensor in the list to numpy
+                        batch_numpy = []
+                        for emb in embeddings:
+                            if torch.is_tensor(emb):
+                                batch_numpy.append(emb.cpu().numpy())
+                            else:
+                                batch_numpy.append(np.array(emb))
+                        all_embeddings.extend(batch_numpy)
+                    elif torch.is_tensor(embeddings):
+                        # Handle if it returns a single tensor
                         embeddings = embeddings.cpu().numpy()
-                    all_embeddings.append(embeddings)
-            return np.vstack(all_embeddings)
-            
+                        if embeddings.ndim == 1:
+                            embeddings = embeddings.reshape(1, -1)
+                        all_embeddings.append(embeddings)
+                    else:
+                        # Fallback - try to convert whatever it is
+                        all_embeddings.extend(list(embeddings))
+            return np.array(all_embeddings)
+        
         # Fallback to manual encoding
         all_embeddings = []
         
@@ -318,7 +345,7 @@ class LocalJinaGPU:
             for i in range(0, len(texts), batch_size):
                 batch_texts = texts[i:i + batch_size]
                 
-                # Tokenize
+                # Tokenize batch
                 inputs = self.tokenizer(
                     batch_texts,
                     padding=True,
@@ -331,14 +358,22 @@ class LocalJinaGPU:
                 inputs = {k: v.to(self.primary_device) for k, v in inputs.items()}
                 
                 # Generate embeddings
-                outputs = self.model(**inputs)
+                outputs = self.model(**inputs, task_label='retrieval.query')
                 
                 # Mean pooling
                 token_embeddings = outputs.last_hidden_state
                 attention_mask = inputs['attention_mask']
+                
+                # Expand attention mask for broadcasting
                 input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+                
+                # Sum embeddings for non-padding tokens
                 sum_embeddings = torch.sum(token_embeddings * input_mask_expanded, 1)
+                
+                # Count non-padding tokens
                 sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+                
+                # Mean pooling
                 batch_embeddings = sum_embeddings / sum_mask
                 
                 # Convert to numpy
@@ -346,7 +381,7 @@ class LocalJinaGPU:
                 all_embeddings.append(batch_embeddings)
                 
         return np.vstack(all_embeddings)
-        
+    
     def benchmark(self) -> Dict[str, float]:
         """
         Benchmark the model performance.
